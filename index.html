@@ -31,12 +31,12 @@
   <!-- メインUI -->
   <div id="main-ui" class="overlay-ui">
     <div id="upload-container">
-      <h3>キャラクターをアップロード</h3>
+      <h3>キャラクターを選択またはアップロード</h3>
       <input type="file" id="image-upload-input" accept="image/png, image/jpeg" style="display: none;">
       <label for="image-upload-input" class="u-button">ファイルを選択</label>
-      <img id="image-preview" class="hidden">
+      <img id="image-preview">
     </div>
-    <button id="ar-button" class="u-button" disabled>ARを開始</button>
+    <button id="ar-button" class="u-button">ARを開始</button>
     <div id="instructions" class="hidden">タップしてキャラクターを配置</div>
   </div>
 
@@ -51,21 +51,27 @@
   <a-scene
     id="scene"
     webxr="requiredFeatures: hit-test, local-floor; optionalFeatures: dom-overlay; overlayElement: #main-ui;"
-    ar-hit-test="target: #character-standee; type: hittest;"
+    ar-hit-test="target: #character-panel; type: hittest;"
     vr-mode-ui="enabled: false"
     screenshot
   >
     <a-camera></a-camera>
 
-    <a-entity id="character-standee" visible="false">
-      <a-box height="1.8" width="0.9" depth="0.05" color="white" position="0 0 0"></a-box>
-      <a-plane id="character-image" height="1.7" width="0.85" material="transparent: true; shader: flat; alphaTest: 0.5;" position="0 0 0.03"></a-plane>
-    </a-entity>
+    <!-- 配置するオブジェクト (シンプルなパネル) -->
+    <a-plane
+        id="character-panel"
+        height="1.7"
+        width="0.85"
+        material="src: kayoko.png; transparent: true; shader: flat; alphaTest: 0.5;"
+        visible="false"
+    ></a-plane>
+
   </a-scene>
 
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      let selectedImageSrc = null;
+      const defaultImageSrc = 'kayoko.png';
+      let selectedImageSrc = defaultImageSrc;
 
       // --- DOM要素 ---
       const sceneEl = document.querySelector('a-scene');
@@ -76,31 +82,23 @@
       const arButton = document.getElementById('ar-button');
       const instructionsEl = document.getElementById('instructions');
       const editControls = document.getElementById('edit-controls');
-      const characterStandee = document.getElementById('character-standee');
-      const characterImage = document.getElementById('character-image');
+      const characterPanel = document.getElementById('character-panel');
+
+      // --- 初期画像の設定 ---
+      imagePreview.src = defaultImageSrc;
 
       // --- 画像アップロード処理 ---
       imageUploadInput.addEventListener('change', (event) => {
         const file = event.target.files[0];
         if (file) {
-          // 既存のBlob URLを解放
-          if (selectedImageSrc) { URL.revokeObjectURL(selectedImageSrc); }
-          
+          if (selectedImageSrc && selectedImageSrc.startsWith('blob:')) { URL.revokeObjectURL(selectedImageSrc); }
           selectedImageSrc = URL.createObjectURL(file);
           imagePreview.src = selectedImageSrc;
-          imagePreview.classList.remove('hidden');
-          arButton.disabled = false;
         }
       });
 
       // --- AR開始 ---
-      arButton.addEventListener('click', () => {
-        if (!selectedImageSrc) { 
-          alert('まず画像をアップロードしてください。');
-          return;
-        }
-        sceneEl.enterAR();
-      });
+      arButton.addEventListener('click', () => sceneEl.enterAR());
 
       sceneEl.addEventListener('enter-vr', () => {
         uploadContainer.classList.add('hidden');
@@ -121,8 +119,8 @@
       // --- 配置処理 ---
       sceneEl.addEventListener('click', () => {
         if (sceneEl.getAttribute('ar-hit-test').enabled) {
-          characterImage.setAttribute('material', 'src', selectedImageSrc);
-          characterStandee.setAttribute('visible', 'true');
+          characterPanel.setAttribute('material', 'src', selectedImageSrc);
+          characterPanel.setAttribute('visible', 'true');
           sceneEl.setAttribute('ar-hit-test', { enabled: false });
           instructionsEl.classList.add('hidden');
           editControls.classList.remove('hidden');
@@ -131,12 +129,12 @@
 
       // --- 編集機能 ---
       document.getElementById('scale-up-button').addEventListener('click', () => {
-        const currentScale = characterStandee.getAttribute('scale');
-        characterStandee.setAttribute('scale', `${currentScale.x * 1.2} ${currentScale.y * 1.2} ${currentScale.z * 1.2}`);
+        const currentScale = characterPanel.getAttribute('scale');
+        characterPanel.setAttribute('scale', `${currentScale.x * 1.2} ${currentScale.y * 1.2} ${currentScale.z * 1.2}`);
       });
       document.getElementById('scale-down-button').addEventListener('click', () => {
-        const currentScale = characterStandee.getAttribute('scale');
-        characterStandee.setAttribute('scale', `${currentScale.x * 0.8} ${currentScale.y * 0.8} ${currentScale.z * 0.8}`);
+        const currentScale = characterPanel.getAttribute('scale');
+        characterPanel.setAttribute('scale', `${currentScale.x * 0.8} ${currentScale.y * 0.8} ${currentScale.z * 0.8}`);
       });
 
       document.getElementById('toggle-ui-button').addEventListener('click', (e) => {
