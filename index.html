@@ -66,26 +66,29 @@
     renderer="logarithmicDepthBuffer: true;"
     vr-mode-ui="enabled: false"
   >
-    <!-- アセットはここでプリロードしない -->
-    <a-assets></a-assets>
+    <a-assets>
+        <!-- Test Image with correct CORS headers -->
+        <img id="test-img" src="https://aframe.io/aframe/examples/boilerplate/panorama/puydesancy.jpg" crossorigin="anonymous">
+    </a-assets>
 
     <a-camera></a-camera>
 
-    <!-- 配置カーソル (回転を削除) -->
+    <!-- 配置カーソル (回転を再度追加) -->
     <a-ring
       id="reticle"
+      rotation="-90 0 0"
       radius-inner="0.1"
       radius-outer="0.15"
       color="#3498db"
       visible="false"
     ></a-ring>
 
-    <!-- キャラクターパネル (srcを直接指定) -->
+    <!-- キャラクターパネル (テスト画像を使用) -->
     <a-plane
         id="character-panel"
         height="1.7"
         width="0.85"
-        material="src: kayoko.png; transparent: true; shader: flat;"
+        material="src: #test-img; transparent: true; shader: flat;"
         position="0 -9999 0"
         visible="true"
     ></a-plane>
