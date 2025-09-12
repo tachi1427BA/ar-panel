@@ -28,7 +28,6 @@
       position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); 
       display: flex; flex-wrap: wrap; justify-content: center; 
     }
-    /* UI非表示モードのスタイル */
     #edit-controls.ui-hidden .u-button:not(#toggle-ui-button) {
       display: none;
     }
@@ -44,7 +43,7 @@
       <img id="image-preview">
     </div>
     <button id="ar-button" class="u-button">ARを開始</button>
-    <div id="instructions" class="hidden">タップしてキャラクターを配置</div>
+    <div id="instructions" class="hidden" style="text-align: center;">タップしてキャラクターを配置</div>
   </div>
 
   <!-- 編集用UI -->
@@ -109,7 +108,7 @@
       sceneEl.addEventListener('enter-vr', () => {
         uploadContainer.classList.add('hidden');
         arButton.classList.add('hidden');
-        instructionsEl.classList.remove('hidden');
+        instructionsEl.style.display = 'block'; // 直接スタイルを変更
         mainUI.style.backgroundColor = 'transparent';
         sceneEl.setAttribute('ar-hit-test', { enabled: true });
       });
@@ -117,7 +116,7 @@
       sceneEl.addEventListener('exit-vr', () => {
         uploadContainer.classList.remove('hidden');
         arButton.classList.remove('hidden');
-        instructionsEl.classList.add('hidden');
+        instructionsEl.style.display = 'none'; // 直接スタイルを変更
         editControls.classList.add('hidden');
         mainUI.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
       });
@@ -128,7 +127,7 @@
           characterPanel.setAttribute('material', 'src', selectedImageSrc);
           characterPanel.setAttribute('visible', 'true');
           sceneEl.setAttribute('ar-hit-test', { enabled: false });
-          instructionsEl.classList.add('hidden');
+          instructionsEl.style.display = 'none'; // 直接スタイルを変更
           editControls.classList.remove('hidden');
         }
       });
@@ -143,7 +142,6 @@
         characterPanel.setAttribute('scale', `${currentScale.x * 0.8} ${currentScale.y * 0.8} ${currentScale.z * 0.8}`);
       });
 
-      // UI表示/非表示 (修正版)
       document.getElementById('toggle-ui-button').addEventListener('click', (e) => {
         const isHidden = editControls.classList.toggle('ui-hidden');
         e.target.textContent = isHidden ? 'UIを表示' : 'UIを隠す';
