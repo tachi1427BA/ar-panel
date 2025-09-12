@@ -25,19 +25,29 @@
   <a-scene
     id="scene"
     webxr="requiredFeatures: hit-test, local-floor; optionalFeatures: dom-overlay; overlayElement: #overlay;"
-    ar-hit-test="target: #character-panel; type: hittest;"
+    ar-hit-test="target: #character-standee; type: hittest;"
     vr-mode-ui="enabled: false"
   >
     <a-camera></a-camera>
 
-    <!-- 配置するオブジェクト (キャラクターパネル) -->
-    <a-plane
-        id="character-panel"
-        height="1.7"
-        width="0.85"
-        material="src: kayoko.png; transparent: true; shader: flat;"
-        visible="false"
-    ></a-plane>
+    <!-- 配置するオブジェクト (スタンド全体) -->
+    <a-entity id="character-standee" visible="false">
+      <!-- 背景・厚みとなる白い箱 -->
+      <a-box
+        height="1.8"
+        width="0.9"
+        depth="0.05"
+        color="white"
+        position="0 0 0"
+      ></a-box>
+      <!-- キャラクター画像パネル -->
+      <a-plane
+          height="1.7"
+          width="0.85"
+          material="src: kayoko.png; transparent: true; shader: flat; alphaTest: 0.5;"
+          position="0 0 0.026"  <!-- 箱の少し手前に配置 -->
+      ></a-plane>
+    </a-entity>
 
   </a-scene>
 
@@ -46,7 +56,8 @@
       const sceneEl = document.querySelector('a-scene');
       const arButton = document.getElementById('ar-button');
       const instructionsEl = document.getElementById('instructions');
-      const characterPanel = document.getElementById('character-panel');
+      // IDをキャラクターパネル全体を指すように変更
+      const characterStandee = document.getElementById('character-standee');
 
       arButton.addEventListener('click', () => sceneEl.enterAR());
 
@@ -62,16 +73,16 @@
       });
 
       sceneEl.addEventListener('ar-hit-test-start', () => {
-        console.log("Hit-test tracking started for the invisible panel.");
+        console.log("Hit-test tracking started for the invisible standee.");
       });
 
       // タップで配置を確定
       sceneEl.addEventListener('click', () => {
         if (sceneEl.getAttribute('ar-hit-test').enabled) {
-          console.log("Screen tapped to place the panel.");
-          // パネルを可視化する
-          characterPanel.setAttribute('visible', 'true');
-          // ar-hit-testを無効化して、パネルの位置を固定する
+          console.log("Screen tapped to place the standee.");
+          // スタンド全体を可視化する
+          characterStandee.setAttribute('visible', 'true');
+          // ar-hit-testを無効化して、スタンドの位置を固定する
           sceneEl.setAttribute('ar-hit-test', { enabled: false });
           instructionsEl.style.display = 'none';
         }
