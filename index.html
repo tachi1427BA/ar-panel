@@ -24,7 +24,14 @@
     #image-preview { 
       width: 100px; height: 100px; object-fit: cover; margin: 10px; border: 2px solid #fff; 
     }
-    #edit-controls { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; flex-wrap: wrap; justify-content: center; }
+    #edit-controls { 
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); 
+      display: flex; flex-wrap: wrap; justify-content: center; 
+    }
+    /* UI非表示モードのスタイル */
+    #edit-controls.ui-hidden .u-button:not(#toggle-ui-button) {
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -57,7 +64,6 @@
   >
     <a-camera></a-camera>
 
-    <!-- 配置するオブジェクト (シンプルなパネル) -->
     <a-plane
         id="character-panel"
         height="1.7"
@@ -137,16 +143,10 @@
         characterPanel.setAttribute('scale', `${currentScale.x * 0.8} ${currentScale.y * 0.8} ${currentScale.z * 0.8}`);
       });
 
+      // UI表示/非表示 (修正版)
       document.getElementById('toggle-ui-button').addEventListener('click', (e) => {
-        const isHidden = editControls.classList.contains('hidden');
-        if (isHidden) {
-          editControls.classList.remove('hidden');
-          e.target.textContent = 'UIを隠す';
-        } else {
-          editControls.classList.add('hidden');
-          e.target.classList.remove('hidden');
-          e.target.textContent = 'UIを表示';
-        }
+        const isHidden = editControls.classList.toggle('ui-hidden');
+        e.target.textContent = isHidden ? 'UIを表示' : 'UIを隠す';
       });
 
       document.getElementById('screenshot-button').addEventListener('click', () => {
