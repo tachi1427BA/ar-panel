@@ -19,22 +19,24 @@
       padding: 12px 20px; font-size: 16px; 
       border: none; border-radius: 8px; cursor: pointer; margin: 5px;
     }
-    #image-selection-container { text-align: center; }
-    #image-selection-container img {
-      width: 80px; height: 80px; object-fit: cover; margin: 10px; cursor: pointer; border: 2px solid transparent;
+    .u-button:disabled { background-color: #888; cursor: not-allowed; }
+    #upload-container { text-align: center; }
+    #image-preview { 
+      width: 100px; height: 100px; object-fit: cover; margin: 10px; border: 2px solid #fff; 
     }
-    #image-selection-container img.selected { border-color: #3498db; }
     #edit-controls { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; flex-wrap: wrap; justify-content: center; }
   </style>
 </head>
 <body>
   <!-- メインUI -->
   <div id="main-ui" class="overlay-ui">
-    <div id="image-selection-container">
-      <h3>キャラクターを選択</h3>
-      <div id="image-list"></div>
+    <div id="upload-container">
+      <h3>キャラクターをアップロード</h3>
+      <input type="file" id="image-upload-input" accept="image/png, image/jpeg" style="display: none;">
+      <label for="image-upload-input" class="u-button">ファイルを選択</label>
+      <img id="image-preview" class="hidden">
     </div>
-    <button id="ar-button" class="u-button">ARを開始</button>
+    <button id="ar-button" class="u-button" disabled>ARを開始</button>
     <div id="instructions" class="hidden">タップしてキャラクターを配置</div>
   </div>
 
@@ -63,42 +65,45 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      // --- キャラクターデータ ---
-      const characters = [
-        { name: 'Kayoko', src: 'kayoko.png' },
-      ];
-      let selectedImageSrc = characters[0].src;
+      let selectedImageSrc = null;
 
       // --- DOM要素 ---
       const sceneEl = document.querySelector('a-scene');
       const mainUI = document.getElementById('main-ui');
-      const imageSelectionContainer = document.getElementById('image-selection-container');
-      const imageList = document.getElementById('image-list');
+      const uploadContainer = document.getElementById('upload-container');
+      const imageUploadInput = document.getElementById('image-upload-input');
+      const imagePreview = document.getElementById('image-preview');
       const arButton = document.getElementById('ar-button');
       const instructionsEl = document.getElementById('instructions');
       const editControls = document.getElementById('edit-controls');
       const characterStandee = document.getElementById('character-standee');
       const characterImage = document.getElementById('character-image');
 
-      // --- 画像選択UIの生成 ---
-      characters.forEach((char, index) => {
-        const img = document.createElement('img');
-        img.src = char.src;
-        img.dataset.src = char.src;
-        if (index === 0) { img.classList.add('selected'); }
-        img.addEventListener('click', (e) => {
-          document.querySelectorAll('#image-list img').forEach(i => i.classList.remove('selected'));
-          e.target.classList.add('selected');
-          selectedImageSrc = e.target.dataset.src;
-        });
-        imageList.appendChild(img);
+      // --- 画像アップロード処理 ---
+      imageUploadInput.addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        if (file) {
+          // 既存のBlob URLを解放
+          if (selectedImageSrc) { URL.revokeObjectURL(selectedImageSrc); }
+          
+          selectedImageSrc = URL.createObjectURL(file);
+          imagePreview.src = selectedImageSrc;
+          imagePreview.classList.remove('hidden');
+          arButton.disabled = false;
+        }
       });
 
       // --- AR開始 ---
-      arButton.addEventListener('click', () => sceneEl.enterAR());
+      arButton.addEventListener('click', () => {
+        if (!selectedImageSrc) { 
+          alert('まず画像をアップロードしてください。');
+          return;
+        }
+        sceneEl.enterAR();
+      });
 
       sceneEl.addEventListener('enter-vr', () => {
-        imageSelectionContainer.classList.add('hidden');
+        uploadContainer.classList.add('hidden');
         arButton.classList.add('hidden');
         instructionsEl.classList.remove('hidden');
         mainUI.style.backgroundColor = 'transparent';
@@ -106,7 +111,7 @@
       });
 
       sceneEl.addEventListener('exit-vr', () => {
-        imageSelectionContainer.classList.remove('hidden');
+        uploadContainer.classList.remove('hidden');
         arButton.classList.remove('hidden');
         instructionsEl.classList.add('hidden');
         editControls.classList.add('hidden');
@@ -125,7 +130,6 @@
       });
 
       // --- 編集機能 ---
-      // サイズ変更
       document.getElementById('scale-up-button').addEventListener('click', () => {
         const currentScale = characterStandee.getAttribute('scale');
         characterStandee.setAttribute('scale', `${currentScale.x * 1.2} ${currentScale.y * 1.2} ${currentScale.z * 1.2}`);
@@ -135,7 +139,6 @@
         characterStandee.setAttribute('scale', `${currentScale.x * 0.8} ${currentScale.y * 0.8} ${currentScale.z * 0.8}`);
       });
 
-      // UI表示/非表示
       document.getElementById('toggle-ui-button').addEventListener('click', (e) => {
         const isHidden = editControls.classList.contains('hidden');
         if (isHidden) {
@@ -148,7 +151,6 @@
         }
       });
 
-      // --- 撮影機能 ---
       document.getElementById('screenshot-button').addEventListener('click', () => {
         sceneEl.components.screenshot.capture('perspective');
       });
