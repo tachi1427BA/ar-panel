@@ -7,85 +7,157 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <style>
-    #overlay {
+    body { margin: 0; font-family: sans-serif; }
+    .overlay-ui {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       display: flex; justify-content: center; align-items: center; flex-direction: column;
-      background-color: rgba(0, 0, 0, 0.5); color: white; z-index: 1000; font-family: sans-serif;
+      background-color: rgba(0, 0, 0, 0.5); color: white; z-index: 1000;
     }
-    #ar-button { padding: 12px 24px; font-size: 18px; border: none; cursor: pointer; }
-    #instructions { display: none; text-align: center; }
+    .hidden { display: none !important; }
+    .u-button { 
+      background-color: #3498db; color: white; 
+      padding: 12px 20px; font-size: 16px; 
+      border: none; border-radius: 8px; cursor: pointer; margin: 5px;
+    }
+    #image-selection-container { text-align: center; }
+    #image-selection-container img {
+      width: 80px; height: 80px; object-fit: cover; margin: 10px; cursor: pointer; border: 2px solid transparent;
+    }
+    #image-selection-container img.selected { border-color: #3498db; }
+    #edit-controls { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; flex-wrap: wrap; justify-content: center; }
   </style>
 </head>
 <body>
-  <div id="overlay">
-    <button id="ar-button">ARを開始</button>
-    <div id="instructions">タップしてキャラクターを配置</div>
+  <!-- メインUI -->
+  <div id="main-ui" class="overlay-ui">
+    <div id="image-selection-container">
+      <h3>キャラクターを選択</h3>
+      <div id="image-list"></div>
+    </div>
+    <button id="ar-button" class="u-button">ARを開始</button>
+    <div id="instructions" class="hidden">タップしてキャラクターを配置</div>
+  </div>
+
+  <!-- 編集用UI -->
+  <div id="edit-controls" class="hidden">
+    <button id="scale-down-button" class="u-button">小さく</button>
+    <button id="scale-up-button" class="u-button">大きく</button>
+    <button id="screenshot-button" class="u-button">撮影</button>
+    <button id="toggle-ui-button" class="u-button">UIを隠す</button>
   </div>
 
   <a-scene
     id="scene"
-    webxr="requiredFeatures: hit-test, local-floor; optionalFeatures: dom-overlay; overlayElement: #overlay;"
+    webxr="requiredFeatures: hit-test, local-floor; optionalFeatures: dom-overlay; overlayElement: #main-ui;"
     ar-hit-test="target: #character-standee; type: hittest;"
     vr-mode-ui="enabled: false"
+    screenshot
   >
     <a-camera></a-camera>
 
-    <!-- 配置するオブジェクト (スタンド全体) -->
     <a-entity id="character-standee" visible="false">
-      <!-- 背景・厚みとなる白い箱 -->
-      <a-box
-        height="1.8"
-        width="0.9"
-        depth="0.05"
-        color="white"
-        position="0 0 0"
-      ></a-box>
-      <!-- キャラクター画像パネル -->
-      <a-plane
-          height="1.7"
-          width="0.85"
-          material="src: kayoko.png; transparent: true; shader: flat; alphaTest: 0.5;"
-          position="0 0 0.026"  <!-- 箱の少し手前に配置 -->
-      ></a-plane>
+      <a-box height="1.8" width="0.9" depth="0.05" color="white" position="0 0 0"></a-box>
+      <a-plane id="character-image" height="1.7" width="0.85" material="transparent: true; shader: flat; alphaTest: 0.5;" position="0 0 0.026"></a-plane>
     </a-entity>
-
   </a-scene>
 
   <script>
     document.addEventListener('DOMContentLoaded', () => {
+      // --- キャラクターデータ ---
+      const characters = [
+        { name: 'Kayoko', src: 'kayoko.png' },
+      ];
+      let selectedImageSrc = characters[0].src;
+
+      // --- DOM要素 ---
       const sceneEl = document.querySelector('a-scene');
+      const mainUI = document.getElementById('main-ui');
+      const imageSelectionContainer = document.getElementById('image-selection-container');
+      const imageList = document.getElementById('image-list');
       const arButton = document.getElementById('ar-button');
       const instructionsEl = document.getElementById('instructions');
-      // IDをキャラクターパネル全体を指すように変更
+      const editControls = document.getElementById('edit-controls');
       const characterStandee = document.getElementById('character-standee');
+      const characterImage = document.getElementById('character-image');
 
+      // --- 画像選択UIの生成 ---
+      characters.forEach((char, index) => {
+        const img = document.createElement('img');
+        img.src = char.src;
+        img.dataset.src = char.src;
+        if (index === 0) { img.classList.add('selected'); }
+        img.addEventListener('click', (e) => {
+          document.querySelectorAll('#image-list img').forEach(i => i.classList.remove('selected'));
+          e.target.classList.add('selected');
+          selectedImageSrc = e.target.dataset.src;
+        });
+        imageList.appendChild(img);
+      });
+
+      // --- AR開始 ---
       arButton.addEventListener('click', () => sceneEl.enterAR());
 
       sceneEl.addEventListener('enter-vr', () => {
-        arButton.style.display = 'none';
-        instructionsEl.style.display = 'block';
+        imageSelectionContainer.classList.add('hidden');
+        arButton.classList.add('hidden');
+        instructionsEl.classList.remove('hidden');
+        mainUI.style.backgroundColor = 'transparent';
         sceneEl.setAttribute('ar-hit-test', { enabled: true });
       });
 
       sceneEl.addEventListener('exit-vr', () => {
-        arButton.style.display = 'block';
-        instructionsEl.style.display = 'none';
+        imageSelectionContainer.classList.remove('hidden');
+        arButton.classList.remove('hidden');
+        instructionsEl.classList.add('hidden');
+        editControls.classList.add('hidden');
+        mainUI.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
       });
 
-      sceneEl.addEventListener('ar-hit-test-start', () => {
-        console.log("Hit-test tracking started for the invisible standee.");
-      });
-
-      // タップで配置を確定
+      // --- 配置処理 ---
       sceneEl.addEventListener('click', () => {
         if (sceneEl.getAttribute('ar-hit-test').enabled) {
-          console.log("Screen tapped to place the standee.");
-          // スタンド全体を可視化する
+          characterImage.setAttribute('material', 'src', selectedImageSrc);
           characterStandee.setAttribute('visible', 'true');
-          // ar-hit-testを無効化して、スタンドの位置を固定する
           sceneEl.setAttribute('ar-hit-test', { enabled: false });
-          instructionsEl.style.display = 'none';
+          instructionsEl.classList.add('hidden');
+          editControls.classList.remove('hidden');
         }
+      });
+
+      // --- 編集機能 ---
+      // サイズ変更
+      document.getElementById('scale-up-button').addEventListener('click', () => {
+        const currentScale = characterStandee.getAttribute('scale');
+        characterStandee.setAttribute('scale', `${currentScale.x * 1.2} ${currentScale.y * 1.2} ${currentScale.z * 1.2}`);
+      });
+      document.getElementById('scale-down-button').addEventListener('click', () => {
+        const currentScale = characterStandee.getAttribute('scale');
+        characterStandee.setAttribute('scale', `${currentScale.x * 0.8} ${currentScale.y * 0.8} ${currentScale.z * 0.8}`);
+      });
+
+      // UI表示/非表示
+      document.getElementById('toggle-ui-button').addEventListener('click', (e) => {
+        const isHidden = editControls.classList.contains('hidden');
+        if (isHidden) {
+          editControls.classList.remove('hidden');
+          e.target.textContent = 'UIを隠す';
+        } else {
+          editControls.classList.add('hidden');
+          e.target.classList.remove('hidden');
+          e.target.textContent = 'UIを表示';
+        }
+      });
+
+      // --- 撮影機能 ---
+      document.getElementById('screenshot-button').addEventListener('click', () => {
+        sceneEl.components.screenshot.capture('perspective');
+      });
+
+      sceneEl.addEventListener('screenshotcaptured', (e) => {
+        const link = document.createElement('a');
+        link.href = e.detail.dataURL;
+        link.download = 'ar-photo.png';
+        link.click();
       });
     });
   </script>
