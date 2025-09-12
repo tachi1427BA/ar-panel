@@ -2,7 +2,8 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>WebXR Simplest Tap-to-Place</title>
+  <title>WebXR Character Panel</title>
+  <meta name="description" content="WebXR Character Panel using A-Frame">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <style>
@@ -18,24 +19,25 @@
 <body>
   <div id="overlay">
     <button id="ar-button">ARを開始</button>
-    <div id="instructions">タップして赤い箱を配置</div>
+    <div id="instructions">タップしてキャラクターを配置</div>
   </div>
 
   <a-scene
     id="scene"
     webxr="requiredFeatures: hit-test, local-floor; optionalFeatures: dom-overlay; overlayElement: #overlay;"
-    ar-hit-test="target: #character-box; type: hittest;"
+    ar-hit-test="target: #character-panel; type: hittest;"
     vr-mode-ui="enabled: false"
   >
     <a-camera></a-camera>
 
-    <!-- 配置するオブジェクト (単純な赤い箱) -->
-    <a-box
-        id="character-box"
-        scale="0.3 0.3 0.3"
-        material="color: red;"
+    <!-- 配置するオブジェクト (キャラクターパネル) -->
+    <a-plane
+        id="character-panel"
+        height="1.7"
+        width="0.85"
+        material="src: kayoko.png; transparent: true; shader: flat;"
         visible="false"
-    ></a-box>
+    ></a-plane>
 
   </a-scene>
 
@@ -44,7 +46,7 @@
       const sceneEl = document.querySelector('a-scene');
       const arButton = document.getElementById('ar-button');
       const instructionsEl = document.getElementById('instructions');
-      const characterBox = document.getElementById('character-box');
+      const characterPanel = document.getElementById('character-panel');
 
       arButton.addEventListener('click', () => sceneEl.enterAR());
 
@@ -59,19 +61,17 @@
         instructionsEl.style.display = 'none';
       });
 
-      // ar-hit-testが追従を開始したことを検知（デバッグ用）
       sceneEl.addEventListener('ar-hit-test-start', () => {
-        console.log("Hit-test tracking started for the invisible box.");
+        console.log("Hit-test tracking started for the invisible panel.");
       });
 
       // タップで配置を確定
       sceneEl.addEventListener('click', () => {
-        // ar-hit-testが有効な場合のみ（つまり、まだ配置していない場合）
         if (sceneEl.getAttribute('ar-hit-test').enabled) {
-          console.log("Screen tapped to place the box.");
-          // ボックスを可視化する
-          characterBox.setAttribute('visible', 'true');
-          // ar-hit-testを無効化して、ボックスの位置を固定する
+          console.log("Screen tapped to place the panel.");
+          // パネルを可視化する
+          characterPanel.setAttribute('visible', 'true');
+          // ar-hit-testを無効化して、パネルの位置を固定する
           sceneEl.setAttribute('ar-hit-test', { enabled: false });
           instructionsEl.style.display = 'none';
         }
