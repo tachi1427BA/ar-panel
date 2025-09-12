@@ -73,12 +73,15 @@
     <a-camera></a-camera>
 
     <!-- 配置カーソル -->
-    <a-entity
+    <!-- 配置カーソル (プリミティブに変更) -->
+    <a-ring
       id="reticle"
-      gltf-model="https://raw.githack.com/aframevr/aframe/master/examples/ar-hit-test/models/reticle/reticle.gltf"
-      scale="0.8 0.8 0.8"
+      rotation="-90 0 0"
+      radius-inner="0.1"
+      radius-outer="0.15"
+      color="#3498db"
       visible="false"
-    ></a-entity>
+    ></a-ring>
 
     <!-- キャラクターパネル -->
     <a-plane
