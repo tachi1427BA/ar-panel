@@ -45,7 +45,7 @@
     <button id="ar-button" class="u-button">ARを開始</button>
     <div id="instructions" style="display: none; text-align: center;">タップしてキャラクターを配置</div>
       <!-- 編集用UI -->
-    <div id="edit-controls" class="hidden">
+    <div id="edit-controls">
       <button id="scale-down-button" class="u-button">小さく</button>
       <button id="scale-up-button" class="u-button">大きく</button>
       <button id="screenshot-button" class="u-button">撮影</button>
@@ -147,7 +147,6 @@
           sceneEl.setAttribute('ar-hit-test', { enabled: false });
           instructionsEl.style.display = 'none';
           instructionsEl.classList.add('hidden');
-          editControls.classList.remove('hidden');
         }
       });
 
