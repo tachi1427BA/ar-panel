@@ -44,15 +44,16 @@
     </div>
     <button id="ar-button" class="u-button">ARを開始</button>
     <div id="instructions" style="display: none; text-align: center;">タップしてキャラクターを配置</div>
+      <!-- 編集用UI -->
+    <div id="edit-controls" class="hidden">
+      <button id="scale-down-button" class="u-button">小さく</button>
+      <button id="scale-up-button" class="u-button">大きく</button>
+      <button id="screenshot-button" class="u-button">撮影</button>
+      <button id="toggle-ui-button" class="u-button">UIを隠す</button>
+    </div>
   </div>
 
-  <!-- 編集用UI -->
-  <div id="edit-controls" class="hidden">
-    <button id="scale-down-button" class="u-button">小さく</button>
-    <button id="scale-up-button" class="u-button">大きく</button>
-    <button id="screenshot-button" class="u-button">撮影</button>
-    <button id="toggle-ui-button" class="u-button">UIを隠す</button>
-  </div>
+
 
   <a-scene
     id="scene"
@@ -70,7 +71,7 @@
         id="character-image"
         height="1.7"
         width="0.85"
-        position="0 0.85 0"
+        position="0 0.85 0.85"
         material="src: kayoko.png; transparent: true; shader: flat; alphaTest: 0.5;"
       ></a-plane>
       <!-- 影 -->
@@ -78,7 +79,7 @@
         id="character-shadow"
         height="1.7"
         width="0.85"
-        position="0 0.01 -0.85"
+        position="0 0.01 0"
         rotation="-90 0 0"
         material="src: kayoko.png; color: black; opacity: 0.4; transparent: true; shader: flat;"
       ></a-plane>
@@ -123,7 +124,7 @@
       sceneEl.addEventListener('enter-vr', () => {
         uploadContainer.classList.add('hidden');
         arButton.classList.add('hidden');
-        instructionsEl.style.display = 'block';
+        //instructionsEl.style.display = 'block';
         mainUI.style.backgroundColor = 'transparent';
         sceneEl.setAttribute('ar-hit-test', { enabled: true });
       });
