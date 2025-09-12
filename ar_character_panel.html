@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AR等身大キャラクターパネル</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            background: #000;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+        }
+
+        #arContainer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+        }
+
+        #video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: 1;
+        }
+
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+        }
+
+        #ui {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(15px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        #controls {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(15px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .control-group {
+            margin: 15px 0;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .control-group label {
+            min-width: 60px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            height: 6px;
+            background: #333;
+            border-radius: 3px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #4CAF50;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        input[type="file"] {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            color: white;
+            font-size: 14px;
+        }
+
+        button {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            border: none;
+            color: white;
+            padding: 12px 24px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 14px;
+            font-weight: bold;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .preset-images {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+            overflow-x: auto;
+            padding: 5px 0;
+        }
+
+        .preset-img {
+            width: 60px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 10px;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .preset-img:hover, .preset-img.selected {
+            border-color: #4CAF50;
+            transform: scale(1.05);
+        }
+
+        #info {
+            font-size: 12px;
+            color: #ccc;
+            margin-top: 15px;
+            line-height: 1.4;
+        }
+
+        #startButton {
+            width: 100%;
+            padding: 18px;
+            font-size: 16px;
+            background: linear-gradient(45deg, #2196F3, #1976D2);
+            margin-top: 15px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        #errorMessage {
+            background: linear-gradient(45deg, #f44336, #d32f2f);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            display: none;
+            box-shadow: 0 4px 15px rgba(244, 67, 54, 0.3);
+        }
+
+        #loadingMessage {
+            background: linear-gradient(45deg, #FF9800, #F57C00);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            display: none;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(255, 152, 0, 0.3);
+        }
+
+        .value-display {
+            min-width: 60px;
+            text-align: right;
+            font-weight: bold;
+            color: #4CAF50;
+        }
+
+        h2 {
+            margin: 0 0 15px 0;
+            color: #4CAF50;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="arContainer">
+        <video id="video" autoplay muted playsinline></video>
+        <canvas id="canvas"></canvas>
+    </div>
+
+    <div id="ui">
+        <h2>🎭 AR等身大キャラクターパネル</h2>
+        <p>キャラクター画像をアップロードするか、プリセットから選択してください</p>
+        
+        <input type="file" id="imageInput" accept="image/*" />
+        
+        <div class="preset-images">
+            <canvas class="preset-img" width="120" height="160" data-character="anime-girl"></canvas>
+            <canvas class="preset-img" width="120" height="160" data-character="anime-boy"></canvas>
+            <canvas class="preset-img" width="120" height="160" data-character="mascot"></canvas>
+        </div>
+
+        <div id="errorMessage"></div>
+        <div id="loadingMessage"></div>
+        
+        <button id="startButton">🚀 ARを開始</button>
+        
+        <div id="info">
+            📱 カメラの使用を許可してください<br>
+            💡 明るい場所でご使用ください<br>
+            🔄 デバイスを動かしてARを体験してください
+        </div>
+    </div>
+
+    <div id="controls" class="hidden">
+        <div class="control-group">
+            <label>📏 高さ:</label>
+            <input type="range" id="heightSlider" min="100" max="250" value="170" />
+            <span id="heightValue" class="value-display">170cm</span>
+        </div>
+        <div class="control-group">
+            <label>📍 距離:</label>
+            <input type="range" id="distanceSlider" min="50" max="300" value="150" />
+            <span id="distanceValue" class="value-display">1.5m</span>
+        </div>
+        <div class="control-group">
+            <label>🔄 回転:</label>
+            <input type="range" id="rotationSlider" min="0" max="360" value="0" />
+            <span id="rotationValue" class="value-display">0°</span>
+        </div>
+        <div class="control-group">
+            <button id="resetButton">🔄 リセット</button>
+            <button id="captureButton">📸 撮影</button>
+            <button id="stopButton">⏹️ 終了</button>
+        </div>
+    </div>
+
+    <script>
+        class ARCharacterPanel {
+            constructor() {
+                this.scene = null;
+                this.camera = null;
+                this.renderer = null;
+                this.characterMesh = null;
+                this.currentTexture = null;
+                this.isARStarted = false;
+                this.video = null;
+                this.selectedPreset = null;
+                
+                // エラーハンドリング
+                window.addEventListener('error', (e) => {
+                    console.error('Global error:', e.error);
+                    this.showError('アプリケーションエラーが発生しました: ' + e.message);
+                });
+
+                this.initializeApp();
+            }
+
+            async initializeApp() {
+                try {
+                    this.showLoading('アプリケーションを初期化中...');
+                    await this.initializePresetImages();
+                    this.bindEvents();
+                    this.hideLoading();
+                } catch (error) {
+                    console.error('Initialization error:', error);
+                    this.showError('初期化に失敗しました: ' + error.message);
+                }
+            }
+
+            async initializePresetImages() {
+                const presets = document.querySelectorAll('.preset-img');
+                
+                // プリセット画像を生成
+                await Promise.all([
+                    this.createAnimeGirl(presets[0]),
+                    this.createAnimeBoy(presets[1]),
+                    this.createMascot(presets[2])
+                ]);
+
+                // クリックイベント設定
+                presets[0].onclick = () => this.selectPreset(presets[0]);
+                presets[1].onclick = () => this.selectPreset(presets[1]);
+                presets[2].onclick = () => this.selectPreset(presets[2]);
+
+                // デフォルト選択
+                this.selectPreset(presets[0]);
+            }
+
+            selectPreset(canvas) {
+                // 前の選択を解除
+                if (this.selectedPreset) {
+                    this.selectedPreset.classList.remove('selected');
+                }
+                
+                // 新しい選択
+                canvas.classList.add('selected');
+                this.selectedPreset = canvas;
+                
+                // テクスチャを更新
+                this.loadCanvasTexture(canvas);
+            }
+
+            loadCanvasTexture(canvas) {
+                try {
+                    if (this.currentTexture) {
+                        this.currentTexture.dispose();
+                    }
+                    this.currentTexture = new THREE.Texture(canvas);
+                    this.currentTexture.needsUpdate = true;
+                    
+                    if (this.characterMesh) {
+                        this.characterMesh.material.map = this.currentTexture;
+                        this.characterMesh.material.needsUpdate = true;
+                    }
+                } catch (error) {
+                    console.error('Texture loading error:', error);
+                    this.showError('テクスチャの読み込みに失敗しました');
+                }
+            }
+
+            async createAnimeGirl(canvas) {
+                return new Promise(resolve => {
+                    const ctx = canvas.getContext('2d');
+                    
+                    // グラデーション背景
+                    const gradient = ctx.createLinearGradient(0, 0, 0, 160);
+                    gradient.addColorStop(0, '#FFB6C1');
+                    gradient.addColorStop(0.5, '#FF91A4');
+                    gradient.addColorStop(1, '#FF69B4');
+                    
+                    ctx.fillStyle = gradient;
+                    ctx.fillRect(0, 0, 120, 160);
+                    
+                    // キャラクター描画
+                    this.drawCharacterBase(ctx, '#FFF8DC', '#8B4513', '#FF69B4');
+                    
+                    // 髪の毛のハイライト
+                    ctx.fillStyle = '#A0522D';
+                    ctx.fillRect(35, 25, 50, 10);
+                    
+                    setTimeout(resolve, 10);
+                });
+            }
+
+            async createAnimeBoy(canvas) {
+                return new Promise(resolve => {
+                    const ctx = canvas.getContext('2d');
+                    
+                    const gradient = ctx.createLinearGradient(0, 0, 0, 160);
+                    gradient.addColorStop(0, '#87CEEB');
+                    gradient.addColorStop(0.5, '#5F9FD3');
+                    gradient.addColorStop(1, '#4169E1');
+                    
+                    ctx.fillStyle = gradient;
+                    ctx.fillRect(0, 0, 120, 160);
+                    
+                    this.drawCharacterBase(ctx, '#FFF8DC', '#2F4F4F', '#4169E1');
+                    
+                    setTimeout(resolve, 10);
+                });
+            }
+
+            async createMascot(canvas) {
+                return new Promise(resolve => {
+                    const ctx = canvas.getContext('2d');
+                    
+                    const gradient = ctx.createLinearGradient(0, 0, 0, 160);
+                    gradient.addColorStop(0, '#98FB98');
+                    gradient.addColorStop(0.5, '#7FE57F');
+                    gradient.addColorStop(1, '#32CD32');
+                    
+                    ctx.fillStyle = gradient;
+                    ctx.fillRect(0, 0, 120, 160);
+                    
+                    // マスコット風の丸い顔
+                    ctx.fillStyle = '#FFF';
+                    ctx.beginPath();
+                    ctx.arc(60, 60, 35, 0, 2 * Math.PI);
+                    ctx.fill();
+                    
+                    // 目
+                    ctx.fillStyle = '#000';
+                    ctx.beginPath();
+                    ctx.arc(50, 50, 6, 0, 2 * Math.PI);
+                    ctx.fill();
+                    
+                    ctx.beginPath();
+                    ctx.arc(70, 50, 6, 0, 2 * Math.PI);
+                    ctx.fill();
+                    
+                    // 笑顔
+                    ctx.beginPath();
+                    ctx.arc(60, 65, 12, 0, Math.PI);
+                    ctx.lineWidth = 3;
+                    ctx.strokeStyle = '#000';
+                    ctx.stroke();
+                    
+                    // 耳
+                    ctx.fillStyle = '#32CD32';
+                    ctx.beginPath();
+                    ctx.arc(40, 35, 8, 0, 2 * Math.PI);
+                    ctx.fill();
+                    
+                    ctx.beginPath();
+                    ctx.arc(80, 35, 8, 0, 2 * Math.PI);
+                    ctx.fill();
+                    
+                    setTimeout(resolve, 10);
+                });
+            }
+
+            drawCharacterBase(ctx, skinColor, hairColor, accentColor) {
+                // 顔
+                ctx.fillStyle = skinColor;
+                ctx.fillRect(35, 30, 50, 60);
+                
+                // 目
+                ctx.fillStyle = '#000';
+                ctx.fillRect(45, 45, 10, 10);
+                ctx.fillRect(65, 45, 10, 10);
+                
+                // 目のハイライト
+                ctx.fillStyle = '#FFF';
+                ctx.fillRect(47, 47, 4, 4);
+                ctx.fillRect(67, 47, 4, 4);
+                
+                // 口
+                ctx.fillStyle = accentColor;
+                ctx.fillRect(55, 65, 10, 6);
+                
+                // 髪
+                ctx.fillStyle = hairColor;
+                ctx.fillRect(30, 20, 60, 25);
+                
+                // 体
+                ctx.fillStyle = accentColor;
+                ctx.fillRect(40, 90, 40, 70);
+            }
+
+            bindEvents() {
+                try {
+                    document.getElementById('imageInput').addEventListener('change', (e) => this.handleImageUpload(e));
+                    document.getElementById('startButton').addEventListener('click', () => this.startAR());
+                    document.getElementById('stopButton').addEventListener('click', () => this.stopAR());
+                    document.getElementById('resetButton').addEventListener('click', () => this.resetPosition());
+                    document.getElementById('captureButton').addEventListener('click', () => this.captureScreen());
+                    
+                    document.getElementById('heightSlider').addEventListener('input', (e) => this.updateHeight(e.target.value));
+                    document.getElementById('distanceSlider').addEventListener('input', (e) => this.updateDistance(e.target.value));
+                    document.getElementById('rotationSlider').addEventListener('input', (e) => this.updateRotation(e.target.value));
+                } catch (error) {
+                    console.error('Event binding error:', error);
+                    this.showError('イベントの設定に失敗しました');
+                }
+            }
+
+            handleImageUpload(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    // 前の選択を解除
+                    if (this.selectedPreset) {
+                        this.selectedPreset.classList.remove('selected');
+                        this.selectedPreset = null;
+                    }
+
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        this.loadImageTexture(e.target.result);
+                    };
+                    reader.onerror = () => {
+                        this.showError('画像の読み込みに失敗しました');
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
+
+            loadImageTexture(imageSrc) {
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = () => {
+                    try {
+                        if (this.currentTexture) {
+                            this.currentTexture.dispose();
+                        }
+                        this.currentTexture = new THREE.Texture(img);
+                        this.currentTexture.needsUpdate = true;
+                        
+                        if (this.characterMesh) {
+                            this.characterMesh.material.map = this.currentTexture;
+                            this.characterMesh.material.needsUpdate = true;
+                        }
+                    } catch (error) {
+                        console.error('Image texture error:', error);
+                        this.showError('画像テクスチャの設定に失敗しました');
+                    }
+                };
+                img.onerror = () => {
+                    this.showError('画像の読み込みに失敗しました');
+                };
+                img.src = imageSrc;
+            }
+
+            async startAR() {
+                try {
+                    this.hideError();
+                    this.showLoading('カメラを初期化中...');
+                    
+                    // カメラストリームを取得
+                    this.video = document.getElementById('video');
+                    const stream = await navigator.mediaDevices.getUserMedia({
+                        video: { 
+                            facingMode: 'environment',
+                            width: { ideal: 1280 },
+                            height: { ideal: 720 }
+                        }
+                    });
+
+                    this.video.srcObject = stream;
+                    await new Promise(resolve => {
+                        this.video.onloadedmetadata = resolve;
+                    });
+
+                    this.initializeThreeJS();
+                    this.isARStarted = true;
+                    
+                    document.getElementById('ui').classList.add('hidden');
+                    document.getElementById('controls').classList.remove('hidden');
+                    this.hideLoading();
+                    
+                } catch (error) {
+                    console.error('AR initialization failed:', error);
+                    this.hideLoading();
+                    this.showError('カメラのアクセスに失敗しました。ブラウザでカメラの使用を許可してください。');
+                }
+            }
+
+            initializeThreeJS() {
+                try {
+                    const canvas = document.getElementById('canvas');
+                    
+                    // Three.js基本設定
+                    this.scene = new THREE.Scene();
+                    this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                    this.renderer = new THREE.WebGLRenderer({ 
+                        canvas: canvas,
+                        antialias: true, 
+                        alpha: true 
+                    });
+                    
+                    this.renderer.setSize(window.innerWidth, window.innerHeight);
+                    this.renderer.setClearColor(0x000000, 0);
+
+                    // 照明を追加
+                    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+                    this.scene.add(ambientLight);
+
+                    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
+                    directionalLight.position.set(1, 1, 1);
+                    this.scene.add(directionalLight);
+
+                    // キャラクターパネルを作成
+                    this.createCharacterPanel();
+                    
+                    // AR的な動作を設定
+                    this.setupARBehavior();
+                    
+                    // レンダリング開始
+                    this.animate();
+                } catch (error) {
+                    console.error('Three.js initialization error:', error);
+                    this.showError('3D描画の初期化に失敗しました');
+                }
+            }
+
+            createCharacterPanel() {
+                try {
+                    let texture = this.currentTexture;
+                    if (!texture && this.selectedPreset) {
+                        texture = new THREE.Texture(this.selectedPreset);
+                        texture.needsUpdate = true;
+                        this.currentTexture = texture;
+                    }
+
+                    if (!texture) {
+                        throw new Error('No texture available');
+                    }
+
+                    const aspectRatio = 0.6;
+                    const height = 1.7;
+                    const width = height * aspectRatio;
+
+                    const geometry = new THREE.PlaneGeometry(width, height);
+                    const material = new THREE.MeshLambertMaterial({
+                        map: texture,
+                        transparent: true,
+                        alphaTest: 0.1,
+                        side: THREE.DoubleSide
+                    });
+
+                    this.characterMesh = new THREE.Mesh(geometry, material);
+                    this.characterMesh.position.set(0, height / 2, -1.5);
+                    this.scene.add(this.characterMesh);
+                } catch (error) {
+                    console.error('Character panel creation error:', error);
+                    this.showError('キャラクターパネルの作成に失敗しました');
+                }
+            }
+
+            setupARBehavior() {
+                let lastOrientation = { alpha: 0, beta: 0, gamma: 0 };
+                
+                // デバイスの向きセンサー
+                if (window.DeviceOrientationEvent) {
+                    window.addEventListener('deviceorientation', (event) => {
+                        if (this.camera && this.isARStarted) {
+                            const alpha = event.alpha || 0;
+                            const beta = event.beta || 0;
+                            const gamma = event.gamma || 0;
+
+                            // 滑らかな動き
+                            const smoothing = 0.1;
+                            lastOrientation.alpha += (alpha - lastOrientation.alpha) * smoothing;
+                            lastOrientation.beta += (beta - lastOrientation.beta) * smoothing;
+                            lastOrientation.gamma += (gamma - lastOrientation.gamma) * smoothing;
+
+                            this.camera.rotation.x = lastOrientation.beta * Math.PI / 180 * 0.5;
+                            this.camera.rotation.y = lastOrientation.alpha * Math.PI / 180 * 0.5;
+                            this.camera.rotation.z = lastOrientation.gamma * Math.PI / 180 * 0.3;
+                        }
+                    });
+                }
+
+                // タッチイベント
+                let touchStart = { x: 0, y: 0 };
+                let isDragging = false;
+
+                const canvas = document.getElementById('canvas');
+
+                canvas.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    isDragging = true;
+                    touchStart.x = e.touches[0].clientX;
+                    touchStart.y = e.touches[0].clientY;
+                });
+
+                canvas.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                    if (isDragging && this.characterMesh && this.isARStarted) {
+                        const deltaX = (e.touches[0].clientX - touchStart.x) * 0.005;
+                        const deltaY = (e.touches[0].clientY - touchStart.y) * 0.005;
+
+                        this.characterMesh.position.x += deltaX;
+                        this.characterMesh.position.y -= deltaY;
+
+                        touchStart.x = e.touches[0].clientX;
+                        touchStart.y = e.touches[0].clientY;
+                    }
+                });
+
+                canvas.addEventListener('touchend', () => {
+                    isDragging = false;
+                });
+
+                // マウスイベント（PC用）
+                let mouseDown = false;
+                canvas.addEventListener('mousedown', (e) => {
+                    mouseDown = true;
+                    touchStart.x = e.clientX;
+                    touchStart.y = e.clientY;
+                });
+
+                canvas.addEventListener('mousemove', (e) => {
+                    if (mouseDown && this.characterMesh && this.isARStarted) {
+                        const deltaX = (e.clientX - touchStart.x) * 0.005;
+                        const deltaY = (e.clientY - touchStart.y) * 0.005;
+
+                        this.characterMesh.position.x += deltaX;
+                        this.characterMesh.position.y -= deltaY;
+
+                        touchStart.x = e.clientX;
+                        touchStart.y = e.clientY;
+                    }
+                });
+
+                canvas.addEventListener('mouseup', () => {
+                    mouseDown = false;
+                });
+            }
+
+            animate() {
+                if (this.isARStarted && this.renderer && this.scene && this.camera) {
+                    requestAnimationFrame(() => this.animate());
+                    
+                    try {
+                        // キャラクターの微細な動き
+                        if (this.characterMesh) {
+                            this.characterMesh.rotation.y += Math.sin(Date.now() * 0.001) * 0.001;
+                        }
+                        
+                        this.renderer.render(this.scene, this.camera);
+                    } catch (error) {
+                        console.error('Render error:', error);
+                    }
+                }
+            }
+
+            updateHeight(value) {
+                document.getElementById('heightValue').textContent = value + 'cm';
+                if (this.characterMesh) {
+                    const height = parseFloat(value) / 100;
+                    const scale = height / 1.7;
+                    
+                    this.characterMesh.scale.set(scale, scale, scale);
+                    this.characterMesh.position.y = height / 2;
+                }
+            }
+
+            updateDistance(value) {
+                const distance = parseFloat(value) / 100;
+                document.getElementById('distanceValue').textContent = distance.toFixed(1) + 'm';
+                if (this.characterMesh) {
+                    this.characterMesh.position.z = -distance;
+                }
+            }
+
+            updateRotation(value) {
+                document.getElementById('rotationValue').textContent = value + '°';
+                if (this.characterMesh) {
+                    this.characterMesh.rotation.y = parseFloat(value) * Math.PI / 180;
+                }
+            }
+
+            resetPosition() {
+                if (this.characterMesh) {
+                    this.characterMesh.position.set(0, 0.85, -1.5);
+                    this.characterMesh.rotation.set(0, 0, 0);
+                    this.characterMesh.scale.set(1, 1, 1);
+                    
+                    document.getElementById('heightSlider').value = 170;
+                    document.getElementById('distanceSlider').value = 150;
+                    document.getElementById('rotationSlider').value = 0;
+                    this.updateHeight(170);
+                    this.updateDistance(150);
+                    this.updateRotation(0);
+                }
+            }
+
+            captureScreen() {
+                if (this.renderer) {
+                    try {
+                        const canvas = this.renderer.domElement;
+                        const link = document.createElement('a');
+                        link.download = 'ar-character-' + new Date().toISOString().slice(0, 19).replace(/:/g, '-') + '.png';
+                        link.href = canvas.toDataURL('image/png');
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        
+                        this.showMessage('スクリーンショットを保存しました');
+                    } catch (error) {
+                        console.error('Capture error:', error);
+                        this.showError('スクリーンショットの保存に失敗しました');
+                    }
+                }
+            }
+
+            stopAR() {
+                try {
+                    this.isARStarted = false;
+                    
+                    // ビデオストリームを停止
+                    if (this.video && this.video.srcObject) {
+                        this.video.srcObject.getTracks().forEach(track => track.stop());
+                    }
+
+                    // Three.jsリソースをクリーンアップ
+                    if (this.renderer) {
+                        this.renderer.dispose();
+                    }
+                    
+                    if (this.currentTexture) {
+                        this.currentTexture.dispose();
+                    }
+
+                    // UIを戻す
+                    document.getElementById('ui').classList.remove('hidden');
+                    document.getElementById('controls').classList.add('hidden');
+                } catch (error) {
+                    console.error('Stop AR error:', error);
+                    this.showError('AR終了時にエラーが発生しました');
+                }
+            }
+
+            showError(message) {
+                const errorDiv = document.getElementById('errorMessage');
+                errorDiv.textContent = '❌ ' + message;
+                errorDiv.style.display = 'block';
+                setTimeout(() => this.hideError(), 5000);
+            }
+
+            hideError() {
+                document.getElementById('errorMessage').style.display = 'none';
+            }
+
+            showLoading(message) {
+                const loadingDiv = document.getElementById('loadingMessage');
+                loadingDiv.textContent = '⏳ ' + message;
+                loadingDiv.style.display = 'block';
+            }
+
+            hideLoading() {
+                document.getElementById('loadingMessage').style.display = 'none';
+            }
+
+            showMessage(message) {
+                // 一時的にローディング表示を使用
+                this.showLoading(message);
+                setTimeout(() => this.hideLoading(), 2000);
+            }
+        }
+
+        // アプリケーション開始
+        let arApp = null;
+        window.addEventListener('load', () => {
+            try {
+                arApp = new ARCharacterPanel();
+                window.arApp = arApp; // デバッグ用
+            } catch (error) {
+                console.error('App initialization failed:', error);
+                alert('アプリケーションの初期化に失敗しました: ' + error.message);
+            }
+        });
+
+        // ウィンドウリサイズ対応
+        window.addEventListener('resize', () => {
+            if (arApp && arApp.camera && arApp.renderer) {
+                try {
+                    arApp.camera.aspect = window.innerWidth / window.innerHeight;
+                    arApp.camera.updateProjectionMatrix();
+                    arApp.renderer.setSize(window.innerWidth, window.innerHeight);
+                } catch (error) {
+                    console.error('Resize error:', error);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
