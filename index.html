@@ -78,9 +78,9 @@
         id="character-shadow"
         height="1.7"
         width="0.85"
-        position="0 0 0"
+        position="0 0.01 0"
         rotation="-90 0 0"
-        material="src: kayoko.png; color: black; opacity: 0.4; transparent: true; alphaTest: 0.5;"
+        material="src: kayoko.png; color: black; opacity: 0.4; transparent: true; shader: flat;"
       ></a-plane>
     </a-entity>
 
@@ -126,6 +126,7 @@
         instructionsEl.style.display = 'block';
         mainUI.style.backgroundColor = 'transparent';
         sceneEl.setAttribute('ar-hit-test', { enabled: true });
+        editControls.classList.remove('hidden');
       });
 
       sceneEl.addEventListener('exit-vr', () => {
