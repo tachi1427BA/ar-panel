@@ -57,33 +57,30 @@
   <a-scene
     id="scene"
     webxr="requiredFeatures: hit-test, local-floor; optionalFeatures: dom-overlay; overlayElement: #main-ui;"
-    ar-hit-test="target: #character-standee; type: hittest;"
+    ar-hit-test="target: #character-group; type: hittest;"
     vr-mode-ui="enabled: false"
     screenshot
   >
     <a-camera></a-camera>
 
-    <!-- 配置するオブジェクト (スタンド全体) -->
-    <a-entity id="character-standee" visible="false">
+    <!-- 配置するオブジェクト (キャラクターと影のグループ) -->
+    <a-entity id="character-group" visible="false">
+      <!-- キャラクター本体 -->
+      <a-plane
+        id="character-image"
+        height="1.7"
+        width="0.85"
+        position="0 0.85 0" <!-- 接地点がy=0になるように、高さの半分だけ上に持ち上げる -->
+        material="src: kayoko.png; transparent: true; shader: flat; alphaTest: 0.5;"
+      ></a-plane>
       <!-- 影 -->
-      <a-circle
-        radius="0.45"
-        rotation="-90 0 0"
-        position="0 -0.89 0"
-        material="color: black; opacity: 0.4;"
-      ></a-circle>
-      <!-- 背景・厚みとなる白い箱 -->
-      <a-box 
-        height="1.8" width="0.9" depth="0.05" 
-        color="white" 
+      <a-plane
+        id="character-shadow"
+        height="1.7"
+        width="0.85"
         position="0 0 0"
-      ></a-box>
-      <!-- キャラクター画像パネル -->
-      <a-plane 
-        id="character-image" 
-        height="1.7" width="0.85" 
-        material="src: kayoko.png; transparent: true; shader: flat; alphaTest: 0.5;" 
-        position="0 0 0.03"
+        rotation="-90 0 0"
+        material="src: kayoko.png; color: black; opacity: 0.4; transparent: true; alphaTest: 0.5;"
       ></a-plane>
     </a-entity>
 
@@ -103,8 +100,9 @@
       const arButton = document.getElementById('ar-button');
       const instructionsEl = document.getElementById('instructions');
       const editControls = document.getElementById('edit-controls');
-      const characterStandee = document.getElementById('character-standee');
+      const characterGroup = document.getElementById('character-group');
       const characterImage = document.getElementById('character-image');
+      const characterShadow = document.getElementById('character-shadow');
 
       // --- 初期画像の設定 ---
       imagePreview.src = defaultImageSrc;
@@ -141,8 +139,11 @@
       // --- 配置処理 ---
       sceneEl.addEventListener('click', () => {
         if (sceneEl.getAttribute('ar-hit-test').enabled) {
+          // 画像と影の両方に、選択された画像を適用
           characterImage.setAttribute('material', 'src', selectedImageSrc);
-          characterStandee.setAttribute('visible', 'true');
+          characterShadow.setAttribute('material', 'src', selectedImageSrc);
+          
+          characterGroup.setAttribute('visible', 'true');
           sceneEl.setAttribute('ar-hit-test', { enabled: false });
           instructionsEl.style.display = 'none';
           editControls.classList.remove('hidden');
@@ -151,12 +152,12 @@
 
       // --- 編集機能 ---
       document.getElementById('scale-up-button').addEventListener('click', () => {
-        const currentScale = characterStandee.getAttribute('scale');
-        characterStandee.setAttribute('scale', `${currentScale.x * 1.2} ${currentScale.y * 1.2} ${currentScale.z * 1.2}`);
+        const currentScale = characterGroup.getAttribute('scale');
+        characterGroup.setAttribute('scale', `${currentScale.x * 1.2} ${currentScale.y * 1.2} ${currentScale.z * 1.2}`);
       });
       document.getElementById('scale-down-button').addEventListener('click', () => {
-        const currentScale = characterStandee.getAttribute('scale');
-        characterStandee.setAttribute('scale', `${currentScale.x * 0.8} ${currentScale.y * 0.8} ${currentScale.z * 0.8}`);
+        const currentScale = characterGroup.getAttribute('scale');
+        characterGroup.setAttribute('scale', `${currentScale.x * 0.8} ${currentScale.y * 0.8} ${currentScale.z * 0.8}`);
       });
 
       document.getElementById('toggle-ui-button').addEventListener('click', (e) => {
