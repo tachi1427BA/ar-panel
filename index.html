@@ -66,29 +66,26 @@
     renderer="logarithmicDepthBuffer: true;"
     vr-mode-ui="enabled: false"
   >
-    <a-assets>
-      <img id="character-img" src="kayoko.png">
-    </a-assets>
+    <!-- アセットはここでプリロードしない -->
+    <a-assets></a-assets>
 
     <a-camera></a-camera>
 
-    <!-- 配置カーソル -->
-    <!-- 配置カーソル (プリミティブに変更) -->
+    <!-- 配置カーソル (回転を削除) -->
     <a-ring
       id="reticle"
-      rotation="-90 0 0"
       radius-inner="0.1"
       radius-outer="0.15"
       color="#3498db"
       visible="false"
     ></a-ring>
 
-    <!-- キャラクターパネル -->
+    <!-- キャラクターパネル (srcを直接指定) -->
     <a-plane
         id="character-panel"
         height="1.7"
         width="0.85"
-        material="src: #character-img; transparent: true; shader: flat;"
+        material="src: kayoko.png; transparent: true; shader: flat;"
         position="0 -9999 0"
         visible="true"
     ></a-plane>
