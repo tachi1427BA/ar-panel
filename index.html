@@ -43,7 +43,7 @@
       <img id="image-preview">
     </div>
     <button id="ar-button" class="u-button">ARを開始</button>
-    <div id="instructions" class="hidden" style="text-align: center;">タップしてキャラクターを配置</div>
+    <div id="instructions" style="display: none; text-align: center;">タップしてキャラクターを配置</div>
   </div>
 
   <!-- 編集用UI -->
@@ -57,19 +57,35 @@
   <a-scene
     id="scene"
     webxr="requiredFeatures: hit-test, local-floor; optionalFeatures: dom-overlay; overlayElement: #main-ui;"
-    ar-hit-test="target: #character-panel; type: hittest;"
+    ar-hit-test="target: #character-standee; type: hittest;"
     vr-mode-ui="enabled: false"
     screenshot
   >
     <a-camera></a-camera>
 
-    <a-plane
-        id="character-panel"
-        height="1.7"
-        width="0.85"
-        material="src: kayoko.png; transparent: true; shader: flat; alphaTest: 0.5;"
-        visible="false"
-    ></a-plane>
+    <!-- 配置するオブジェクト (スタンド全体) -->
+    <a-entity id="character-standee" visible="false">
+      <!-- 影 -->
+      <a-circle
+        radius="0.45"
+        rotation="-90 0 0"
+        position="0 -0.89 0"
+        material="color: black; opacity: 0.4;"
+      ></a-circle>
+      <!-- 背景・厚みとなる白い箱 -->
+      <a-box 
+        height="1.8" width="0.9" depth="0.05" 
+        color="white" 
+        position="0 0 0"
+      ></a-box>
+      <!-- キャラクター画像パネル -->
+      <a-plane 
+        id="character-image" 
+        height="1.7" width="0.85" 
+        material="src: kayoko.png; transparent: true; shader: flat; alphaTest: 0.5;" 
+        position="0 0 0.03"
+      ></a-plane>
+    </a-entity>
 
   </a-scene>
 
@@ -87,7 +103,8 @@
       const arButton = document.getElementById('ar-button');
       const instructionsEl = document.getElementById('instructions');
       const editControls = document.getElementById('edit-controls');
-      const characterPanel = document.getElementById('character-panel');
+      const characterStandee = document.getElementById('character-standee');
+      const characterImage = document.getElementById('character-image');
 
       // --- 初期画像の設定 ---
       imagePreview.src = defaultImageSrc;
@@ -108,7 +125,7 @@
       sceneEl.addEventListener('enter-vr', () => {
         uploadContainer.classList.add('hidden');
         arButton.classList.add('hidden');
-        instructionsEl.style.display = 'block'; // 直接スタイルを変更
+        instructionsEl.style.display = 'block';
         mainUI.style.backgroundColor = 'transparent';
         sceneEl.setAttribute('ar-hit-test', { enabled: true });
       });
@@ -116,7 +133,7 @@
       sceneEl.addEventListener('exit-vr', () => {
         uploadContainer.classList.remove('hidden');
         arButton.classList.remove('hidden');
-        instructionsEl.style.display = 'none'; // 直接スタイルを変更
+        instructionsEl.style.display = 'none';
         editControls.classList.add('hidden');
         mainUI.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
       });
@@ -124,22 +141,22 @@
       // --- 配置処理 ---
       sceneEl.addEventListener('click', () => {
         if (sceneEl.getAttribute('ar-hit-test').enabled) {
-          characterPanel.setAttribute('material', 'src', selectedImageSrc);
-          characterPanel.setAttribute('visible', 'true');
+          characterImage.setAttribute('material', 'src', selectedImageSrc);
+          characterStandee.setAttribute('visible', 'true');
           sceneEl.setAttribute('ar-hit-test', { enabled: false });
-          instructionsEl.style.display = 'none'; // 直接スタイルを変更
+          instructionsEl.style.display = 'none';
           editControls.classList.remove('hidden');
         }
       });
 
       // --- 編集機能 ---
       document.getElementById('scale-up-button').addEventListener('click', () => {
-        const currentScale = characterPanel.getAttribute('scale');
-        characterPanel.setAttribute('scale', `${currentScale.x * 1.2} ${currentScale.y * 1.2} ${currentScale.z * 1.2}`);
+        const currentScale = characterStandee.getAttribute('scale');
+        characterStandee.setAttribute('scale', `${currentScale.x * 1.2} ${currentScale.y * 1.2} ${currentScale.z * 1.2}`);
       });
       document.getElementById('scale-down-button').addEventListener('click', () => {
-        const currentScale = characterPanel.getAttribute('scale');
-        characterPanel.setAttribute('scale', `${currentScale.x * 0.8} ${currentScale.y * 0.8} ${currentScale.z * 0.8}`);
+        const currentScale = characterStandee.getAttribute('scale');
+        characterStandee.setAttribute('scale', `${currentScale.x * 0.8} ${currentScale.y * 0.8} ${currentScale.z * 0.8}`);
       });
 
       document.getElementById('toggle-ui-button').addEventListener('click', (e) => {
