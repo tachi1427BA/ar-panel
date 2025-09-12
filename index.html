@@ -2,159 +2,152 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>AR Character Panel</title>
-  <meta name="description" content="AR Character Panel using A-Frame and AR.js">
+  <title>WebXR Character Panel</title>
+  <meta name="description" content="WebXR Character Panel using A-Frame">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- A-Frameを読み込み -->
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-  <!-- AR.js for A-Frameを読み込み -->
-  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
 
   <style>
-    /* ロード中のメッセージスタイル */
-    #loading-message {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      color: white;
-      font-size: 24px;
+    body {
+      margin: 0;
       font-family: sans-serif;
-      z-index: 1000;
-      text-align: center;
     }
-    .arjs-loader {
-      height: 100%;
-      width: 100%;
-      position: absolute;
+    #overlay {
+      position: fixed;
       top: 0;
       left: 0;
-      background-color: rgba(0, 0, 0, 0.8);
-      z-index: 9999;
+      width: 100%;
+      height: 100%;
       display: flex;
       justify-content: center;
       align-items: center;
+      flex-direction: column;
+      background-color: rgba(0, 0, 0, 0.5);
+      color: white;
+      z-index: 1000;
     }
-    .arjs-loader-spinner {
-      border: 16px solid #f3f3f3;
-      border-top: 16px solid #3498db;
-      border-radius: 50%;
-      width: 120px;
-      height: 120px;
-      animation: spin 2s linear infinite;
+    #ar-button {
+      padding: 12px 24px;
+      font-size: 18px;
+      background-color: #3498db;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
     }
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+    #instructions {
+      display: none; /* Initially hidden */
+      text-align: center;
+      padding: 20px;
     }
   </style>
 </head>
 
-<body style="margin : 0px; overflow: hidden;">
-  <!-- AR.jsのローディング画面 -->
-  <div class="arjs-loader">
-    <div id="loading-message">
-      カメラを起動し、周囲の環境を<br>ゆっくりスキャンしてください...
+<body>
+  <div id="overlay">
+    <button id="ar-button">ARを開始</button>
+    <div id="instructions">
+      <p>カメラを床や地面に向けて、<br>ゆっくり動かしてください。</p>
+      <p>カーソルが表示されたら、<br>好きな場所をタップしてキャラクターを配置します。</p>
     </div>
   </div>
 
-  <!--
-    arjs: AR.jsの基本的な設定
-      - sourceType: webcam (モバイルのカメラを使用)
-      - trackingMethod: best (最適なトラッキング方法を自動選択)
-      - debugUIEnabled: false (デバッグ用のUIを非表示)
-    ar-hit-test: 平面を検出してオブジェクトを配置する機能
-      - enabled: false (最初は無効化)
-      - target: #character-panel (ヒットテストで動かすオブジェクト)
-      - type: FOOTER (床や地面などの水平な平面を検出)
-  -->
   <a-scene
-    vr-mode-ui="enabled: false;"
-    renderer="logarithmicDepthBuffer: true;"
-    arjs="sourceType: webcam; trackingMethod: best; debugUIEnabled: false;"
-    ar-hit-test="enabled: false; target: #character-panel; type: FOOTER;"
-    gesture-detector
     id="scene"
+    webxr="
+      requiredFeatures: hit-test, local-floor;
+      optionalFeatures: dom-overlay;
+      overlayElement: #overlay;
+    "
+    ar-hit-test="
+      target: #reticle;
+      type: hittest;
+    "
+    renderer="logarithmicDepthBuffer: true;"
+    vr-mode-ui="enabled: false"
   >
-    <!-- アセット管理 -->
     <a-assets>
-      <!-- キャラクター画像 (プレースホルダー) -->
-      <img id="character-img" src="https://img.atwiki.jp/bluearchive/attach/62/66/%E3%82%AB%E3%83%A8%E3%82%B3.png">
+      <img id="character-img" src="https://img.atwiki.jp/bluearchive/attach/62/66/%E3%82%AB%E3%83%A8%E3%82%B3.png" crossorigin="anonymous">
     </a-assets>
 
-    <!-- カメラ -->
-    <a-camera
-      gps-new-camera="gpsMinDistance: 5;"
-      look-controls="magicWindowTrackingEnabled: false; touchEnabled: false; mouseEnabled: false"
-    ></a-camera>
+    <a-camera></a-camera>
 
-    <!--
-      キャラクターパネル
-      - visible: false (最初は非表示)
-      - scale: 1.7 1.7 1.7 (約170cmの高さに調整)
-      - material: src: #character-img (画像をテクスチャとして使用); transparent: true (透過を有効に)
-    -->
+    <!-- 配置カーソル -->
     <a-entity
-      id="character-panel"
-      gltf-model=""
-      position="0 -9999 0"
+      id="reticle"
+      gltf-model="https://raw.githack.com/aframevr/aframe/master/examples/ar-hit-test/models/reticle/reticle.gltf"
+      scale="0.8 0.8 0.8"
       visible="false"
-    >
-        <a-plane
-            id="character-plane"
-            height="1.7"
-            width="0.85"
-            material="src: #character-img; transparent: true; shader: flat;"
-        ></a-plane>
-    </a-entity>
+    ></a-entity>
+
+    <!-- キャラクターパネル -->
+    <a-plane
+        id="character-panel"
+        height="1.7"
+        width="0.85"
+        material="src: #character-img; transparent: true; shader: flat;"
+        position="0 -9999 0"
+        visible="true"
+    ></a-plane>
 
   </a-scene>
 
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       const sceneEl = document.querySelector('a-scene');
-      const characterPanel = document.querySelector('#character-panel');
-      const loadingMessage = document.querySelector('#loading-message');
+      const arButton = document.getElementById('ar-button');
+      const instructionsEl = document.getElementById('instructions');
+      const characterPanel = document.getElementById('character-panel');
+      const reticle = document.getElementById('reticle');
+      let hasPlaced = false;
 
-      // ARセッションの準備ができたときのイベント
-      sceneEl.addEventListener('ar-session-start', () => {
-        console.log("AR Session Started");
-        // 平面検出を有効化
+      // ARセッションを開始するボタンの処理
+      arButton.addEventListener('click', () => {
+        sceneEl.enterAR();
+      });
+
+      // ARセッション開始時の処理
+      sceneEl.addEventListener('enter-vr', () => {
+        console.log("Entered AR mode");
+        arButton.style.display = 'none';
+        instructionsEl.style.display = 'block';
+        
+        // ar-hit-testを有効化
         sceneEl.setAttribute('ar-hit-test', { enabled: true });
-        loadingMessage.textContent = '配置したい場所をタップしてください';
       });
       
-      // 平面を検出したときのイベント
+      // ARセッション終了時の処理
+      sceneEl.addEventListener('exit-vr', () => {
+          arButton.style.display = 'block';
+          instructionsEl.style.display = 'none';
+      });
+
+      // ar-hit-testが平面を見つけたときにカーソルを表示
       sceneEl.addEventListener('ar-hit-test-start', () => {
-        console.log("AR Hit Test Started (Surface Found)");
+        if (!hasPlaced) {
+          reticle.setAttribute('visible', true);
+        }
       });
 
-      // 平面が見つからなくなったときのイベント
-      sceneEl.addEventListener('ar-hit-test-achieved', () => {
-        console.log("AR Hit Test Achieved");
-      });
-      
-      // 平面検出が停止したときのイベント
+      // ar-hit-testが平面を見失ったときにカーソルを非表示
       sceneEl.addEventListener('ar-hit-test-stop', () => {
-        console.log("AR Hit Test Stopped (Surface Lost)");
+        reticle.setAttribute('visible', false);
       });
 
-      // 画面をタップしたときのイベント
-      sceneEl.addEventListener('click', (event) => {
-        // ar-hit-testが有効な場合のみ処理
-        if (sceneEl.getAttribute('ar-hit-test').enabled) {
-          console.log("Screen tapped");
-          // パネルを可視化
-          characterPanel.setAttribute('visible', 'true');
+      // 画面タップでキャラクターを配置
+      sceneEl.addEventListener('click', () => {
+        if (reticle.getAttribute('visible')) {
+          // カーソルの現在位置を取得
+          const position = reticle.getAttribute('position');
           
-          // ar-hit-testを無効化して、パネルの位置を固定
+          // キャラクターパネルをその位置に移動
+          characterPanel.setAttribute('position', position);
+          
+          // 一度配置したらカーソルを消して、再配置しないようにする
+          reticle.setAttribute('visible', false);
           sceneEl.setAttribute('ar-hit-test', { enabled: false });
-          
-          // ローディング画面を非表示
-          const loader = document.querySelector('.arjs-loader');
-          if(loader) {
-            loader.style.display = 'none';
-          }
+          instructionsEl.style.display = 'none';
+          hasPlaced = true;
         }
       });
     });
