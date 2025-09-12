@@ -2,96 +2,40 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>WebXR Character Panel</title>
-  <meta name="description" content="WebXR Character Panel using A-Frame">
+  <title>WebXR Simplest Tap-to-Place</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-
   <style>
-    body {
-      margin: 0;
-      font-family: sans-serif;
-    }
     #overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      flex-direction: column;
-      background-color: rgba(0, 0, 0, 0.5);
-      color: white;
-      z-index: 1000;
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      display: flex; justify-content: center; align-items: center; flex-direction: column;
+      background-color: rgba(0, 0, 0, 0.5); color: white; z-index: 1000; font-family: sans-serif;
     }
-    #ar-button {
-      padding: 12px 24px;
-      font-size: 18px;
-      background-color: #3498db;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-    #instructions {
-      display: none; /* Initially hidden */
-      text-align: center;
-      padding: 20px;
-    }
+    #ar-button { padding: 12px 24px; font-size: 18px; border: none; cursor: pointer; }
+    #instructions { display: none; text-align: center; }
   </style>
 </head>
-
 <body>
   <div id="overlay">
     <button id="ar-button">ARを開始</button>
-    <div id="instructions">
-      <p>カメラを床や地面に向けて、<br>ゆっくり動かしてください。</p>
-      <p>カーソルが表示されたら、<br>好きな場所をタップしてキャラクターを配置します。</p>
-    </div>
+    <div id="instructions">タップして赤い箱を配置</div>
   </div>
 
   <a-scene
     id="scene"
-    webxr="
-      requiredFeatures: hit-test, local-floor;
-      optionalFeatures: dom-overlay;
-      overlayElement: #overlay;
-    "
-    ar-hit-test="
-      target: #reticle;
-      type: hittest;
-    "
-    renderer="logarithmicDepthBuffer: true;"
+    webxr="requiredFeatures: hit-test, local-floor; optionalFeatures: dom-overlay; overlayElement: #overlay;"
+    ar-hit-test="target: #character-box; type: hittest;"
     vr-mode-ui="enabled: false"
   >
-    <a-assets>
-        <!-- Test Image with correct CORS headers -->
-        <img id="test-img" src="https://aframe.io/aframe/examples/boilerplate/panorama/puydesancy.jpg" crossorigin="anonymous">
-    </a-assets>
-
     <a-camera></a-camera>
 
-    <!-- 配置カーソル (回転を再度追加) -->
-    <a-ring
-      id="reticle"
-      rotation="-90 0 0"
-      radius-inner="0.1"
-      radius-outer="0.15"
-      color="#3498db"
-      visible="false"
-    ></a-ring>
-
-    <!-- キャラクターパネル (テスト画像を使用) -->
-    <a-plane
-        id="character-panel"
-        height="1.7"
-        width="0.85"
-        material="src: #test-img; transparent: true; shader: flat;"
-        position="0 -9999 0"
-        visible="true"
-    ></a-plane>
+    <!-- 配置するオブジェクト (単純な赤い箱) -->
+    <a-box
+        id="character-box"
+        scale="0.3 0.3 0.3"
+        material="color: red;"
+        visible="false"
+    ></a-box>
 
   </a-scene>
 
@@ -100,57 +44,36 @@
       const sceneEl = document.querySelector('a-scene');
       const arButton = document.getElementById('ar-button');
       const instructionsEl = document.getElementById('instructions');
-      const characterPanel = document.getElementById('character-panel');
-      const reticle = document.getElementById('reticle');
-      let hasPlaced = false;
+      const characterBox = document.getElementById('character-box');
 
-      // ARセッションを開始するボタンの処理
-      arButton.addEventListener('click', () => {
-        sceneEl.enterAR();
-      });
+      arButton.addEventListener('click', () => sceneEl.enterAR());
 
-      // ARセッション開始時の処理
       sceneEl.addEventListener('enter-vr', () => {
-        console.log("Entered AR mode");
         arButton.style.display = 'none';
         instructionsEl.style.display = 'block';
-        
-        // ar-hit-testを有効化
         sceneEl.setAttribute('ar-hit-test', { enabled: true });
       });
-      
-      // ARセッション終了時の処理
+
       sceneEl.addEventListener('exit-vr', () => {
-          arButton.style.display = 'block';
-          instructionsEl.style.display = 'none';
+        arButton.style.display = 'block';
+        instructionsEl.style.display = 'none';
       });
 
-      // ar-hit-testが平面を見つけたときにカーソルを表示
+      // ar-hit-testが追従を開始したことを検知（デバッグ用）
       sceneEl.addEventListener('ar-hit-test-start', () => {
-        if (!hasPlaced) {
-          reticle.setAttribute('visible', true);
-        }
+        console.log("Hit-test tracking started for the invisible box.");
       });
 
-      // ar-hit-testが平面を見失ったときにカーソルを非表示
-      sceneEl.addEventListener('ar-hit-test-stop', () => {
-        reticle.setAttribute('visible', false);
-      });
-
-      // 画面タップでキャラクターを配置
+      // タップで配置を確定
       sceneEl.addEventListener('click', () => {
-        if (reticle.getAttribute('visible')) {
-          // カーソルの現在位置を取得
-          const position = reticle.getAttribute('position');
-          
-          // キャラクターパネルをその位置に移動
-          characterPanel.setAttribute('position', position);
-          
-          // 一度配置したらカーソルを消して、再配置しないようにする
-          reticle.setAttribute('visible', false);
+        // ar-hit-testが有効な場合のみ（つまり、まだ配置していない場合）
+        if (sceneEl.getAttribute('ar-hit-test').enabled) {
+          console.log("Screen tapped to place the box.");
+          // ボックスを可視化する
+          characterBox.setAttribute('visible', 'true');
+          // ar-hit-testを無効化して、ボックスの位置を固定する
           sceneEl.setAttribute('ar-hit-test', { enabled: false });
           instructionsEl.style.display = 'none';
-          hasPlaced = true;
         }
       });
     });
