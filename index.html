@@ -118,7 +118,7 @@
       const characterTexture = document.getElementById('character-texture'); // The asset
       const reticle = document.getElementById('reticle'); // Reticle element
 
-      // --- アスペクト比の更新 ---
+      // --- アスペクト比の更新とテクスチャの再適用 ---
       characterTexture.addEventListener('load', () => {
         if (!characterTexture.src || !characterTexture.complete) { return; }
         const aspectRatio = characterTexture.naturalWidth / characterTexture.naturalHeight;
@@ -127,6 +127,12 @@
 
         characterImage.setAttribute('width', newWidth);
         characterShadow.setAttribute('width', newWidth);
+
+        // A-Frameのキャッシュ問題を回避するため、マテリアルのsrcを一度空にしてから再設定する
+        characterImage.setAttribute('material', 'src', '');
+        characterShadow.setAttribute('material', 'src', '');
+        characterImage.setAttribute('material', 'src', '#character-texture');
+        characterShadow.setAttribute('material', 'src', '#character-texture');
       });
 
       // --- 初期画像の設定 ---
@@ -141,7 +147,8 @@
           if (characterTexture.src.startsWith('blob:')) {
             URL.revokeObjectURL(characterTexture.src);
           }
-          characterTexture.src = newUrl; // Update the asset
+          // アセットのsrcを更新する。残りの処理は'load'イベントハンドラに任せる
+          characterTexture.src = newUrl;
           imagePreview.src = newUrl;   // Update the UI preview
         }
       });
@@ -219,22 +226,26 @@
       });
 
       // --- 編集機能 ---
-      document.getElementById('scale-up-button').addEventListener('click', () => {
+      document.getElementById('scale-up-button').addEventListener('click', (e) => {
+        e.stopPropagation();
         const currentScale = characterGroup.getAttribute('scale');
         characterGroup.setAttribute('scale', `${currentScale.x * 1.2} ${currentScale.y * 1.2} ${currentScale.z * 1.2}`);
       });
-      document.getElementById('scale-down-button').addEventListener('click', () => {
+      document.getElementById('scale-down-button').addEventListener('click', (e) => {
+        e.stopPropagation();
         const currentScale = characterGroup.getAttribute('scale');
         characterGroup.setAttribute('scale', `${currentScale.x * 0.8} ${currentScale.y * 0.8} ${currentScale.z * 0.8}`);
       });
 
       document.getElementById('toggle-ui-button').addEventListener('click', (e) => {
+        e.stopPropagation();
         const isHidden = editControls.classList.toggle('ui-hidden');
         e.target.textContent = isHidden ? 'UIを表示' : 'UIを隠す';
       });
 
       // --- AR/フォールバックモード終了 ---
-      document.getElementById('exit-ar-button').addEventListener('click', () => {
+      document.getElementById('exit-ar-button').addEventListener('click', (e) => {
+        e.stopPropagation();
         if (sceneEl.is('ar-mode')) {
           sceneEl.exitAR();
         } else {
