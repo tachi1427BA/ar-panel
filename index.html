@@ -193,14 +193,14 @@
 
       // --- 配置処理 ---
       sceneEl.addEventListener('ar-hit-test-select', (e) => {
+          instructionsEl.textContent ="";
+          instructionsEl.style.display = 'none';
           const reticlePosition = e.getAttribute('position');
           characterGroup.setAttribute('position', reticlePosition);
           characterGroup.setAttribute('visible', 'true');
 
           // Hide the reticle and stop hit testing after placing the object
           sceneEl.setAttribute('ar-hit-test', { enabled: false });
-          instructionsEl.style.display = 'none';
-          instructionsEl.textContent ="";
       });
 
       // --- 編集機能 ---
