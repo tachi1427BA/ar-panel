@@ -134,7 +134,7 @@
       id="reticle"
       geometry="primitive: ring; radius-inner: 0.05; radius-outer: 0.08;"
       material="color: transparent; shader: flat;"
-      rotation="0 -90 0"
+      rotation="0 0 0"
       visible="false"
     ></a-entity>
 
@@ -289,6 +289,7 @@
           characterGroup.setAttribute('position', reticlePosition);
           characterGroup.setAttribute('visible', 'true');
           characterGroup.setAttribute('rotation', reticleRotation);
+          reticle.style.display = 'none';
           reticle.setAttribute('visible', 'false');
 
       });
