@@ -60,7 +60,7 @@
   <a-scene
     id="scene"
     webxr="optionalFeatures: hit-test, local-floor, dom-overlay; overlayElement: #main-ui;"
-    ar-hit-test="target: #character-group; enabled: false"
+    ar-hit-test="target: #character-group; type: hittest;"
     vr-mode-ui="enabled: false"
     renderer="colorManagement: true;"
   >
@@ -206,7 +206,7 @@
       });
 
       // --- 配置処理 ---
-      sceneEl.addEventListener('select', (e) => {
+      sceneEl.addEventListener('ar-hit-test-select', (e) => {
         // Check if we are in AR and the reticle is visible (meaning a surface is detected)
           instructionsEl.textContent = "設置イベント";
           // Position the character at the reticle's position
@@ -217,8 +217,6 @@
           // Hide the reticle and stop hit testing after placing the object
           sceneEl.setAttribute('ar-hit-test', { enabled: false });
           instructionsEl.style.display = 'none';
-
-
       });
 
       // --- 編集機能 ---
@@ -235,46 +233,6 @@
         const isHidden = editControls.classList.toggle('ui-hidden');
         e.target.textContent = isHidden ? 'UIを表示' : 'UIを隠す';
       });
-
-    //   AFRAME.registerComponent('ar-hit-test', {
-		// 	init: function () {
-		// 		this.xrHitTestSource = null;
-		// 		this.viewerSpace = null;
-		// 		this.refSpace = null;
-
-		// 		this.el.sceneEl.renderer.xr.addEventListener('sessionend', (ev) => {
-		// 			this.viewerSpace = null;
-		// 			this.refSpace = null;
-		// 			this.xrHitTestSource = null;
-		// 		});
-		// 		this.el.sceneEl.renderer.xr.addEventListener('sessionstart', (ev) => {
-		// 			let session = this.el.sceneEl.renderer.xr.getSession();
-
-		// 			let element = this.el;
-		// 			session.addEventListener('select', function () {
-		// 				let position = element.getAttribute('position');
-    //         characterGroup.setAttribute('position', position);
-    //         characterGroup.setAttribute('visible', 'true');
-
-    //         // Hide the reticle and stop hit testing after placing the object
-    //         sceneEl.setAttribute('ar-hit-test', { enabled: false });
-    //         instructionsEl.style.display = 'none';
-		// 			});
-
-		// 			session.requestReferenceSpace('viewer').then((space) => {
-		// 				this.viewerSpace = space;
-		// 				session.requestHitTestSource({space: this.viewerSpace})
-		// 						.then((hitTestSource) => {
-		// 							this.xrHitTestSource = hitTestSource;
-		// 						});
-		// 			});
-
-		// 			session.requestReferenceSpace('local-floor').then((space) => {
-		// 				this.refSpace = space;
-		// 			});
-		// 		});
-		// 	},
-		// });
     });
   </script>
 </body>
