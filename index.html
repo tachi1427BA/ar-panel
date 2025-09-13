@@ -120,7 +120,7 @@
   <a-scene
     id="scene"
     webxr="optionalFeatures: hit-test, local-floor, dom-overlay; overlayElement: #main-ui;"
-    ar-hit-test="target: #character-group; type: hittest; src: circle.png"
+    ar-hit-test="target: #character-group; type: hittest; src: circle.png mapSize:0.5 0.5"
     vr-mode-ui="enabled: false"
     renderer="colorManagement: true;"
   >
@@ -150,7 +150,6 @@
       ></a-plane>
       <!-- 影 -->
       <a-plane
-        hide-on-enter-ar
         id="character-shadow"
         height="1.7"
         width="0.85"
