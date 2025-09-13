@@ -60,7 +60,7 @@
   <a-scene
     id="scene"
     webxr="optionalFeatures: hit-test, local-floor, dom-overlay; overlayElement: #main-ui;"
-    ar-hit-test="target: #character-group; type: hittest; enabled: true; src :reticle"
+    ar-hit-test="target: #character-group; type: hittest; enabled: false;"
     vr-mode-ui="enabled: false"
     renderer="colorManagement: true;"
   >
@@ -83,7 +83,6 @@
       <!-- キャラクター本体 -->
       <a-plane
         id="character-image"
-        hide-on-enter-ar
         height="1.7"
         width="0.85"
         position="0 0.85 0.85"
@@ -92,7 +91,6 @@
       <!-- 影 -->
       <a-plane
         id="character-shadow"
-        hide-on-enter-ar
         height="1.7"
         width="0.85"
         position="0 0.01 0"
