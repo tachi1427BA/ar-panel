@@ -49,7 +49,7 @@
     <button id="ar-button" class="u-button">ARを開始</button>
     <div id="instructions" style="display: none; text-align: center;">タップしてキャラクターを配置</div>
       <!-- 編集用UI -->
-    <div id="edit-controls">
+    <div id="edit-controls" style="display: none;">
       <button id="scale-down-button" class="u-button">小さく</button>
       <button id="scale-up-button" class="u-button">大きく</button>
       <button id="screenshot-button" class="u-button">撮影</button>
@@ -147,30 +147,13 @@
         }
       });
 
-      // --- AR/VR Mode Listeners ---
-      sceneEl.addEventListener('enter-vr', () => {
-        uploadContainer.classList.add('hidden');
-        arButton.classList.add('hidden');
-        mainUI.style.backgroundColor = 'transparent';
-        sceneEl.setAttribute('ar-hit-test', { enabled: true });
-      });
-
-      sceneEl.addEventListener('exit-vr', () => {
-        uploadContainer.classList.remove('hidden');
-        arButton.classList.remove('hidden');
-        instructionsEl.style.display = 'none';
-        mainUI.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-        characterGroup.setAttribute('visible', 'false');
-        sceneEl.setAttribute('ar-hit-test', { enabled: false });
-        reticle.setAttribute('visible', 'false'); // Hide reticle on exit
-      });
-
       // --- AR開始 ---
       arButton.addEventListener('click', () => {
         if (navigator.xr) {
           navigator.xr.isSessionSupported('immersive-ar').then((supported) => {
             if (supported) {
               instructionsEl.style.display = 'block';
+               editControls.style.display = 'block';
               sceneEl.enterAR();
             } else {
               // Fallback for non-AR browsers
@@ -179,6 +162,7 @@
               arButton.classList.add('hidden');
               mainUI.style.backgroundColor = 'transparent';
               instructionsEl.style.display = 'block';
+              editControls.style.display = 'block';
               characterGroup.setAttribute('visible', 'true');
               characterGroup.setAttribute('position', '0 -0.5 -2'); // Position in front of camera
             }
@@ -205,7 +189,7 @@
       });
 
       // --- AR Hit Test and Placement Logic ---
-      sceneEl.addEventListener('ar-hit-test-results', (event) => {
+      sceneEl.addEventListener('ar-hit-test-achieved', (event) => {
         const hit = event.detail.hits[0];
         // Only show reticle if a hit is found AND the character hasn't been placed yet
         if (hit && characterGroup.getAttribute('visible') === false) {
@@ -218,9 +202,9 @@
       });
 
       // --- 配置処理 ---
-      sceneEl.addEventListener('click', () => {
+      sceneEl.addEventListener('ar-hit-test-select', () => {
         // Check if we are in AR and the reticle is visible (meaning a surface is detected)
-        if (sceneEl.is('ar-mode') && reticle.getAttribute('visible')) {
+        if (reticle.getAttribute('visible')) {
           // Position the character at the reticle's position
           const reticlePosition = reticle.getAttribute('position');
           characterGroup.setAttribute('position', reticlePosition);
