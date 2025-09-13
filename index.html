@@ -233,7 +233,7 @@
         const isHidden = editControls.classList.toggle('ui-hidden');
         e.target.textContent = isHidden ? 'UIを表示' : 'UIを隠す';
       });
-      document.getElementById('put-button').addEventListener('click', (e) => {
+      document.getElementById('put-button').addEventListener('click', () => {
         // Check if we are in AR and the reticle is visible (meaning a surface is detected)
         if (reticle.getAttribute('visible')) {
           // Position the character at the reticle's position
