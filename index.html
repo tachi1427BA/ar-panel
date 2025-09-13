@@ -11,7 +11,7 @@
     .overlay-ui {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       display: flex; justify-content: center; align-items: center; flex-direction: column;
-      background-color: #333; color: white; z-index: 1000;
+      background-color: rgba(0, 0, 0, 0.5); color: white; z-index: 1000;
       pointer-events: auto; /* デフォルトではUIイベントを有効に */
     }
     .overlay-ui.ar-mode {
@@ -79,9 +79,20 @@
       text-shadow: 0 0 4px black; /* 影をつけて読みやすくする */
     }
 
+  #opaque-background {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #333;
+      z-index: 999; /* Just below the main UI overlay */
+    }
+
   </style>
 </head>
 <body>
+  <div id="opaque-background" style="display: none;"></div>
   <!-- メインUI -->
   <div id="main-ui" class="overlay-ui">
     <div id="upload-container">
@@ -146,6 +157,7 @@
     <!-- Reticle (配置先の目印) -->
     <a-entity
       id="reticle"
+      geometry="primitive: ring; radius-inner: 0.05; radius-outer: 0.08;"
       material="color: white; shader: flat;"
       rotation="-90 0 0"
       visible="false"
@@ -267,6 +279,7 @@
 
       // --- AR開始 ---
       arButton.addEventListener('click', () => {
+        document.getElementById('opaque-background').style.display = 'none'; // 背景を非表示
         if (navigator.xr) {
           navigator.xr.isSessionSupported('immersive-ar').then((supported) => {
             if (supported) {
@@ -329,6 +342,7 @@
 
       // --- AR/フォールバックモード終了 ---
       document.getElementById('exit-ar-button').addEventListener('click', () => {
+          document.getElementById('opaque-background').style.display = 'block'; // 背景を表示
           resetToMainMenu();
           sceneEl.exitAR();
       });
