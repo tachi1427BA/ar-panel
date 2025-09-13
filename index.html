@@ -57,14 +57,12 @@
     </div>
   </div>
 
-
-
-    <a-scene
+  <a-scene
     id="scene"
     webxr="optionalFeatures: hit-test, local-floor, dom-overlay; overlayElement: #main-ui;"
     ar-hit-test="target: #character-group; type: hittest; enabled: false;"
     vr-mode-ui="enabled: false"
-    screenshot
+    renderer="colorManagement: true;"
   >
     <a-assets>
       <img id="character-texture" src="kayoko.png" crossorigin="anonymous">
@@ -107,7 +105,20 @@
       const instructionsEl = document.getElementById('instructions');
       const editControls = document.getElementById('edit-controls');
       const characterGroup = document.getElementById('character-group');
+      const characterImage = document.getElementById('character-image');
+      const characterShadow = document.getElementById('character-shadow');
       const characterTexture = document.getElementById('character-texture'); // The asset
+
+      // --- アスペクト比の更新 ---
+      characterTexture.addEventListener('load', () => {
+        if (!characterTexture.src || !characterTexture.complete) { return; }
+        const aspectRatio = characterTexture.naturalWidth / characterTexture.naturalHeight;
+        const fixedHeight = 1.7;
+        const newWidth = fixedHeight * aspectRatio;
+
+        characterImage.setAttribute('width', newWidth);
+        characterShadow.setAttribute('width', newWidth);
+      });
 
       // --- 初期画像の設定 ---
       imagePreview.src = characterTexture.src;
@@ -124,6 +135,23 @@
           characterTexture.src = newUrl; // Update the asset
           imagePreview.src = newUrl;   // Update the UI preview
         }
+      });
+
+      // --- AR/VR Mode Listeners ---
+      sceneEl.addEventListener('enter-vr', () => {
+        uploadContainer.classList.add('hidden');
+        arButton.classList.add('hidden');
+        mainUI.style.backgroundColor = 'transparent';
+        sceneEl.setAttribute('ar-hit-test', { enabled: true });
+      });
+
+      sceneEl.addEventListener('exit-vr', () => {
+        uploadContainer.classList.remove('hidden');
+        arButton.classList.remove('hidden');
+        instructionsEl.style.display = 'none';
+        mainUI.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+        characterGroup.setAttribute('visible', 'false');
+        sceneEl.setAttribute('ar-hit-test', { enabled: false });
       });
 
       // --- AR開始 ---
@@ -192,136 +220,40 @@
       });
 
       document.getElementById('screenshot-button').addEventListener('click', () => {
-        sceneEl.components.screenshot.capture('perspective');
-      });
+        const canvas = sceneEl.canvas;
+        
+        // In AR mode, the video is the background. We need to find it.
+        const video = sceneEl.is('ar-mode') ? document.querySelector('video') : null;
 
-      sceneEl.addEventListener('screenshotcaptured', (e) => {
-        const link = document.createElement('a');
-        link.href = e.detail.dataURL;
-        link.download = 'ar-photo.png';
-        link.click();
-      });
-    });
-  </script>
-</body>
-</html>
+        const combinedCanvas = document.createElement('canvas');
+        const ctx = combinedCanvas.getContext('2d');
 
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const defaultImageSrc = 'kayoko.png';
-      let selectedImageSrc = defaultImageSrc;
+        // Set canvas size to match the A-Frame canvas
+        combinedCanvas.width = canvas.width;
+        combinedCanvas.height = canvas.height;
 
-      // --- DOM要素 ---
-      const sceneEl = document.querySelector('a-scene');
-      const mainUI = document.getElementById('main-ui');
-      const uploadContainer = document.getElementById('upload-container');
-      const imageUploadInput = document.getElementById('image-upload-input');
-      const imagePreview = document.getElementById('image-preview');
-      const arButton = document.getElementById('ar-button');
-      const instructionsEl = document.getElementById('instructions');
-      const editControls = document.getElementById('edit-controls');
-      const characterGroup = document.getElementById('character-group');
-      const characterImage = document.getElementById('character-image');
-      const characterShadow = document.getElementById('character-shadow');
-
-      // --- 初期画像の設定 ---
-      imagePreview.src = defaultImageSrc;
-
-      // --- 画像アップロード処理 ---
-      imageUploadInput.addEventListener('change', (event) => {
-        const file = event.target.files[0];
-        if (file) {
-          if (selectedImageSrc && selectedImageSrc.startsWith('blob:')) { URL.revokeObjectURL(selectedImageSrc); }
-          selectedImageSrc = URL.createObjectURL(file);
-          imagePreview.src = selectedImageSrc;
-        }
-      });
-
-      // --- AR開始 ---
-      arButton.addEventListener('click', () => {
-        if (navigator.xr) {
-          navigator.xr.isSessionSupported('immersive-ar').then((supported) => {
-            if (supported) {
-              instructionsEl.style.display = 'block';
-              sceneEl.enterAR();
-            } else {
-              // Fallback for non-AR browsers
-              alert('お使いのブラウザはARに対応していません。キャラクターをシーンに直接表示します。');
-              uploadContainer.classList.add('hidden');
-              arButton.classList.add('hidden');
-              mainUI.style.backgroundColor = 'transparent';
-              instructionsEl.style.display = 'block';
-              characterImage.setAttribute('material', `src: ${selectedImageSrc}; transparent: true; shader: flat; alphaTest: 0.5;`);
-              characterShadow.setAttribute('material', `src: ${selectedImageSrc}; color: black; opacity: 0.4; transparent: true; shader: flat;`);
-              characterGroup.setAttribute('visible', 'true');
-              characterGroup.setAttribute('position', '0 -0.5 -2'); // Position in front of camera
-            }
-          }).catch((err) => {
-            console.error(err);
-            // Fallback for non-AR browsers
-            alert('ARセッションのサポート状況の確認中にエラーが発生しました。キャラクターをシーンに直接表示します。');
-            uploadContainer.classList.add('hidden');
-            arButton.classList.add('hidden');
-            mainUI.style.backgroundColor = 'transparent';
-            
-            characterImage.setAttribute('material', `src: ${selectedImageSrc}; transparent: true; shader: flat; alphaTest: 0.5;`);
-            characterShadow.setAttribute('material', `src: ${selectedImageSrc}; color: black; opacity: 0.4; transparent: true; shader: flat;`);
-            characterGroup.setAttribute('visible', 'true');
-            characterGroup.setAttribute('position', '0 -0.5 -2'); // Position in front of camera
-          });
+        if (video) {
+          // AR Mode: Draw video background first
+          try {
+            ctx.drawImage(video, 0, 0, combinedCanvas.width, combinedCanvas.height);
+          } catch (e) {
+            console.error("Could not draw video to canvas. It might be tainted.", e);
+          }
         } else {
-          // Fallback for non-XR browsers
-          alert('お使いのブラウザはWebXRに対応していません。キャラクターをシーンに直接表示します。');
-          uploadContainer.classList.add('hidden');
-          arButton.classList.add('hidden');
-          mainUI.style.backgroundColor = 'transparent';
-          instructionsEl.style.display = 'block';
-          characterImage.setAttribute('material', `src: ${selectedImageSrc}; transparent: true; shader: flat; alphaTest: 0.5;`);
-          characterShadow.setAttribute('material', `src: ${selectedImageSrc}; color: black; opacity: 0.4; transparent: true; shader: flat;`);
-          characterGroup.setAttribute('visible', 'true');
-          characterGroup.setAttribute('position', '0 -0.5 -2'); // Position in front of camera
+          // Non-AR Mode: Fill background with scene background color or white
+          ctx.fillStyle = sceneEl.getAttribute('background')?.color || 'white';
+          ctx.fillRect(0, 0, combinedCanvas.width, combinedCanvas.height);
         }
-      });
 
-      // --- 配置処理 ---
-      sceneEl.addEventListener('click', () => {
-        if (sceneEl.getAttribute('ar-hit-test').enabled) {
-          // 画像と影の両方に、選択された画像を適用
-          characterImage.setAttribute('material', `src: ${selectedImageSrc}; transparent: true; shader: flat; alphaTest: 0.5;`);
-          characterShadow.setAttribute('material', `src: ${selectedImageSrc}; color: black; opacity: 0.4; transparent: true; shader: flat;`);
-          
-          characterGroup.setAttribute('visible', 'true');
-          sceneEl.setAttribute('ar-hit-test', { enabled: false });
-          instructionsEl.style.display = 'none';
-        }
-      });
+        // Draw the A-Frame scene canvas on top
+        ctx.drawImage(canvas, 0, 0, combinedCanvas.width, combinedCanvas.height);
 
-      // --- 編集機能 ---
-      document.getElementById('scale-up-button').addEventListener('click', () => {
-        const currentScale = characterGroup.getAttribute('scale');
-        characterGroup.setAttribute('scale', `${currentScale.x * 1.2} ${currentScale.y * 1.2} ${currentScale.z * 1.2}`);
-      });
-      document.getElementById('scale-down-button').addEventListener('click', () => {
-        const currentScale = characterGroup.getAttribute('scale');
-        characterGroup.setAttribute('scale', `${currentScale.x * 0.8} ${currentScale.y * 0.8} ${currentScale.z * 0.8}`);
-      });
-
-      document.getElementById('toggle-ui-button').addEventListener('click', (e) => {
-        const isHidden = editControls.classList.toggle('ui-hidden');
-        e.target.textContent = isHidden ? 'UIを表示' : 'UIを隠す';
-      });
-
-      document.getElementById('screenshot-button').addEventListener('click', () => {
-        sceneEl.components.screenshot.capture('perspective');
-      });
-
-      sceneEl.addEventListener('screenshotcaptured', (e) => {
+        // Trigger download
         const link = document.createElement('a');
-        link.href = e.detail.dataURL;
+        link.href = combinedCanvas.toDataURL('image/png');
         link.download = 'ar-photo.png';
         link.click();
       });
     });
   </script>
 </body>
-</html>
