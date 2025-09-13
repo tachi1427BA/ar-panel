@@ -60,7 +60,7 @@
   <a-scene
     id="scene"
     webxr="optionalFeatures: hit-test, local-floor, dom-overlay; overlayElement: #main-ui;"
-    ar-hit-test="target: #character-group; type: hittest; enabled: false;"
+    ar-hit-test="enabled: false"
     vr-mode-ui="enabled: false"
     renderer="colorManagement: true;"
   >
@@ -191,7 +191,7 @@
       });
 
       // --- AR Hit Test and Placement Logic ---
-      sceneEl.addEventListener('ar-hit-test-achieved', (event) => {
+      sceneEl.addEventListener('ar-hit-test-result', (event) => {
         const hit = event.detail.hits[0];
         // Only show reticle if a hit is found AND the character hasn't been placed yet
         if (hit && characterGroup.getAttribute('visible') === false) {
@@ -204,7 +204,7 @@
       });
 
       // --- 配置処理 ---
-      sceneEl.addEventListener('ar-hit-test-select', () => {
+      sceneEl.addEventListener('click', () => {
         // Check if we are in AR and the reticle is visible (meaning a surface is detected)
         if (reticle.getAttribute('visible')) {
           // Position the character at the reticle's position
