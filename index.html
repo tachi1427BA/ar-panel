@@ -226,26 +226,27 @@
       });
 
       // --- 編集機能 ---
-      document.getElementById('scale-up-button').addEventListener('click', (e) => {
-        e.stopPropagation();
+      // UIイベントがARのヒットテストをトリガーしないように、親要素でイベント伝播を停止
+      const editControlsEl = document.getElementById('edit-controls');
+      editControlsEl.addEventListener('touchstart', (e) => { e.stopPropagation(); });
+      editControlsEl.addEventListener('mousedown', (e) => { e.stopPropagation(); });
+
+      document.getElementById('scale-up-button').addEventListener('click', () => {
         const currentScale = characterGroup.getAttribute('scale');
         characterGroup.setAttribute('scale', `${currentScale.x * 1.2} ${currentScale.y * 1.2} ${currentScale.z * 1.2}`);
       });
-      document.getElementById('scale-down-button').addEventListener('click', (e) => {
-        e.stopPropagation();
+      document.getElementById('scale-down-button').addEventListener('click', () => {
         const currentScale = characterGroup.getAttribute('scale');
         characterGroup.setAttribute('scale', `${currentScale.x * 0.8} ${currentScale.y * 0.8} ${currentScale.z * 0.8}`);
       });
 
       document.getElementById('toggle-ui-button').addEventListener('click', (e) => {
-        e.stopPropagation();
         const isHidden = editControls.classList.toggle('ui-hidden');
         e.target.textContent = isHidden ? 'UIを表示' : 'UIを隠す';
       });
 
       // --- AR/フォールバックモード終了 ---
-      document.getElementById('exit-ar-button').addEventListener('click', (e) => {
-        e.stopPropagation();
+      document.getElementById('exit-ar-button').addEventListener('click', () => {
         if (sceneEl.is('ar-mode')) {
           sceneEl.exitAR();
         } else {
