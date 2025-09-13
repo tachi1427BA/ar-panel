@@ -54,6 +54,7 @@
       border-top: 1px solid #555;
       border-bottom: 1px solid #555;
       background-color: rgba(0,0,0,0.2); /* 範囲を分かりやすくするため背景色を設定 */
+      cursor: grab; /* ドラッグできることを示すカーソル */
     }
     .preset-button {
       /* Gridレイアウトでは不要なスタイルを削除 */
@@ -321,6 +322,37 @@
       // A-FrameのARセッション終了イベントをリッスン
       sceneEl.addEventListener('exit-vr', () => {
         resetToMainMenu();
+      });
+
+      // --- ドラッグでスクロールする機能 ---
+      const slider = document.getElementById('preset-selector');
+      let isDown = false;
+      let startY;
+      let scrollTop;
+
+      slider.addEventListener('mousedown', (e) => {
+        isDown = true;
+        slider.style.cursor = 'grabbing';
+        startY = e.pageY - slider.offsetTop;
+        scrollTop = slider.scrollTop;
+      });
+
+      slider.addEventListener('mouseleave', () => {
+        isDown = false;
+        slider.style.cursor = 'grab';
+      });
+
+      slider.addEventListener('mouseup', () => {
+        isDown = false;
+        slider.style.cursor = 'grab';
+      });
+
+      slider.addEventListener('mousemove', (e) => {
+        if (!isDown) return;
+        e.preventDefault();
+        const y = e.pageY - slider.offsetTop;
+        const walk = (y - startY);
+        slider.scrollTop = scrollTop - walk;
       });
     });
   </script>
