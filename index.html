@@ -120,7 +120,7 @@
   <a-scene
     id="scene"
     webxr="optionalFeatures: hit-test, local-floor, dom-overlay; overlayElement: #main-ui;"
-    ar-hit-test="target: #reticle; type: hittest; mapSize:0.5 0.5"
+    ar-hit-test="target: #reticle; type: hittest; src: #circle-texture; mapSize:0.5 0.5"
     vr-mode-ui="enabled: false"
     renderer="colorManagement: true;"
   >
@@ -128,15 +128,14 @@
       <img id="character-texture" src="シロコ.png" crossorigin="anonymous">
     </a-assets>
         <a-assets>
-      <img id="circle" src="circle.png" crossorigin="anonymous">
+      <img id="circle-texture" src="circle.png" crossorigin="anonymous">
     </a-assets>
     <a-camera></a-camera>
 
     <!-- Reticle (配置先の目印) -->
     <a-entity
       id="reticle"
-      geometry="primitive: ring; radius-inner: 0.05; radius-outer: 0.08;"
-      material="color: white; shader: flat;"
+      material="src: #circle-texture; transparent: true; shader: flat; alphaTest: 0.5;"
       rotation="-90 0 0"
       visible="false"
     ></a-entity>
@@ -294,9 +293,6 @@
           characterGroup.setAttribute('rotation', reticleRotation);
           reticle.style.display = 'none';
           reticle.setAttribute('visible', 'false');
-          reticle.setAttribute('position', '0 0 0');
-          reticle.setAttribute('material', 'color', 'transparent');
-          sceneEl.setAttribute('ar-hit-test', 'enabled', false); 
       });
 
       // --- 編集機能 ---
