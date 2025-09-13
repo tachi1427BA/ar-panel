@@ -52,7 +52,7 @@
     <div id="edit-controls" style="display: none;">
       <button id="scale-down-button" class="u-button">小さく</button>
       <button id="scale-up-button" class="u-button">大きく</button>
-      <!-- <button id="screenshot-button" class="u-button">撮影</button> -->
+      <button id="put-button" class="u-button">設置</button>
       <button id="toggle-ui-button" class="u-button">UIを隠す</button>
     </div>
   </div>
@@ -74,7 +74,7 @@
       id="reticle"
       geometry="primitive: ring; radius-inner: 0.05; radius-outer: 0.08;"
       material="color: white; shader: flat;"
-      rotation="-90 0 0"
+      rotation="-90 -90 0"
       visible="false"
     ></a-entity>
 
@@ -232,6 +232,20 @@
       document.getElementById('toggle-ui-button').addEventListener('click', (e) => {
         const isHidden = editControls.classList.toggle('ui-hidden');
         e.target.textContent = isHidden ? 'UIを表示' : 'UIを隠す';
+      });
+      document.getElementById('put-button').addEventListener('click', (e) => {
+        // Check if we are in AR and the reticle is visible (meaning a surface is detected)
+        if (reticle.getAttribute('visible')) {
+          // Position the character at the reticle's position
+          const reticlePosition = reticle.getAttribute('position');
+          characterGroup.setAttribute('position', reticlePosition);
+          characterGroup.setAttribute('visible', 'true');
+
+          // Hide the reticle and stop hit testing after placing the object
+          reticle.setAttribute('visible', 'false');
+          sceneEl.setAttribute('ar-hit-test', { enabled: false });
+          instructionsEl.style.display = 'none';
+        }
       });
     });
   </script>
