@@ -92,7 +92,7 @@
   </style>
 </head>
 <body>
-  <div id="opaque-background" style="display: none;"></div>
+  <div id="opaque-background"></div>
   <!-- メインUI -->
   <div id="main-ui" class="overlay-ui">
     <div id="upload-container">
@@ -202,6 +202,7 @@
       const characterShadow = document.getElementById('character-shadow');
       const characterTexture = document.getElementById('character-texture'); // The asset
       const reticle = document.getElementById('reticle'); // Reticle element
+      const backgroundUI = document.getElementById('opaque-background');
 
       // --- アスペクト比の更新とテクスチャの再適用 ---
       characterTexture.addEventListener('load', () => {
@@ -271,7 +272,7 @@
         arButton.classList.remove('hidden');
         instructionsEl.style.display = 'none';
         editControls.style.display = 'none';
-        
+        backgroundUI.style.display = 'block'; // 背景を表示
         // オブジェクトとレティクルを非表示に
         characterGroup.setAttribute('visible', 'false');
         reticle.setAttribute('visible', 'false');
@@ -279,7 +280,7 @@
 
       // --- AR開始 ---
       arButton.addEventListener('click', () => {
-        document.getElementById('opaque-background').style.display = 'none'; // 背景を非表示
+        backgroundUI.style.display = 'none'; // 背景を非表示
         if (navigator.xr) {
           navigator.xr.isSessionSupported('immersive-ar').then((supported) => {
             if (supported) {
@@ -323,6 +324,7 @@
           characterGroup.setAttribute('rotation', reticleRotation);
           reticle.style.display = 'none';
           reticle.setAttribute('visible', 'false');
+          reticle.setAttribute('geometry', 'primitive: ring; radius-inner: 0.0; radius-outer: 0.0;');
       });
 
       // --- 編集機能 ---
@@ -342,7 +344,6 @@
 
       // --- AR/フォールバックモード終了 ---
       document.getElementById('exit-ar-button').addEventListener('click', () => {
-          document.getElementById('opaque-background').style.display = 'block'; // 背景を表示
           resetToMainMenu();
           sceneEl.exitAR();
       });
