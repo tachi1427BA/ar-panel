@@ -12,6 +12,11 @@
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       display: flex; justify-content: center; align-items: center; flex-direction: column;
       background-color: rgba(0, 0, 0, 0.5); color: white; z-index: 1000;
+      pointer-events: auto; /* デフォルトではUIイベントを有効に */
+    }
+    .overlay-ui.ar-mode {
+      pointer-events: none; /* ARモードではイベントを透過させる */
+      background-color: transparent;
     }
     .hidden { display: none !important; }
     .u-button { 
@@ -19,6 +24,7 @@
       background-color: #3498db; color: white; 
       padding: 12px 20px; font-size: 16px; 
       border: none; border-radius: 8px; cursor: pointer; margin: 5px;
+      pointer-events: auto; /* ボタンは常にイベントを有効に */
     }
     .u-button:disabled { background-color: #888; cursor: not-allowed; }
     #upload-container { text-align: center; }
@@ -156,9 +162,9 @@
       // --- フォールバックモードに入る関数 ---
       function enterFallbackMode(message) {
         alert(message);
+        mainUI.classList.add('ar-mode');
         uploadContainer.classList.add('hidden');
         arButton.classList.add('hidden');
-        mainUI.style.backgroundColor = 'transparent';
         instructionsEl.textContent = "3Dビューで表示中";
         instructionsEl.style.display = 'block';
         editControls.style.display = 'block';
@@ -168,8 +174,8 @@
 
       // --- セッションを終了しUIをリセットする関数 ---
       function resetToMainMenu() {
+        mainUI.classList.remove('ar-mode');
         // UIを初期状態に戻す
-        mainUI.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
         uploadContainer.classList.remove('hidden');
         arButton.classList.remove('hidden');
         instructionsEl.style.display = 'none';
@@ -191,10 +197,10 @@
           navigator.xr.isSessionSupported('immersive-ar').then((supported) => {
             if (supported) {
               // ARセッションを開始
+              mainUI.classList.add('ar-mode');
               instructionsEl.textContent = 'タップしてキャラクターを配置';
               instructionsEl.style.display = 'block';
               editControls.style.display = 'block';
-              mainUI.style.backgroundColor = 'transparent';
               uploadContainer.classList.add('hidden');
               arButton.classList.add('hidden');
               sceneEl.enterAR();
@@ -226,11 +232,6 @@
       });
 
       // --- 編集機能 ---
-      // UIイベントがARのヒットテストをトリガーしないように、親要素でイベント伝播を停止
-      const editControlsEl = document.getElementById('edit-controls');
-      editControlsEl.addEventListener('touchstart', (e) => { e.stopPropagation(); });
-      editControlsEl.addEventListener('mousedown', (e) => { e.stopPropagation(); });
-
       document.getElementById('scale-up-button').addEventListener('click', () => {
         const currentScale = characterGroup.getAttribute('scale');
         characterGroup.setAttribute('scale', `${currentScale.x * 1.2} ${currentScale.y * 1.2} ${currentScale.z * 1.2}`);
@@ -247,12 +248,8 @@
 
       // --- AR/フォールバックモード終了 ---
       document.getElementById('exit-ar-button').addEventListener('click', () => {
-        if (sceneEl.is('ar-mode')) {
-          sceneEl.exitAR();
-        } else {
-          // フォールバックモードから抜ける場合、UIリセットを直接呼ぶ
           resetToMainMenu();
-        }
+          sceneEl.exitAR();
       });
 
       // A-FrameのARセッション終了イベントをリッスン
