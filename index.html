@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <title>WebXR Character Panel</title>
-  <meta name="description" content="WebXR Character Panel using A-Frame">
+  <meta name="description" content="AR立ち絵Viewer">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <style>
@@ -52,7 +52,6 @@
     <div id="edit-controls" style="display: none;">
       <button id="scale-down-button" class="u-button">小さく</button>
       <button id="scale-up-button" class="u-button">大きく</button>
-      <button id="put-button" class="u-button">設置</button>
       <button id="toggle-ui-button" class="u-button">UIを隠す</button>
     </div>
   </div>
@@ -85,7 +84,7 @@
         id="character-image"
         height="1.7"
         width="0.85"
-        position="0 0.85 0.85"
+        position="0 0.85 0"
         material="src: #character-texture; transparent: true; shader: flat; alphaTest: 0.5;"
       ></a-plane>
       <!-- 影 -->
@@ -93,7 +92,7 @@
         id="character-shadow"
         height="1.7"
         width="0.85"
-        position="0 0.01 0"
+        position="0 0.01 -0.85"
         rotation="-90 0 0"
         material="src: #character-texture; color: black; opacity: 0.4; transparent: true; shader: flat;"
       ></a-plane>
@@ -191,25 +190,9 @@
         }
       });
 
-      // --- AR Hit Test and Placement Logic ---
-      sceneEl.addEventListener('', (event) => {
-        const hit = event.detail.hits[0];
-        instructionsEl.textContent = "ヒットイベントを受け取りました";
-        // Only show reticle if a hit is found AND the character hasn't been placed yet
-        if (hit && characterGroup.getAttribute('visible') === false) {
-          const hitPosition = hit.position;
-          reticle.setAttribute('visible', 'true');
-          reticle.setAttribute('position', hitPosition);
-        } else {
-          reticle.setAttribute('visible', 'false');
-        }
-      });
 
       // --- 配置処理 ---
       sceneEl.addEventListener('ar-hit-test-select', (e) => {
-        // Check if we are in AR and the reticle is visible (meaning a surface is detected)
-          instructionsEl.textContent = "設置イベント";
-          // Position the character at the reticle's position
           const reticlePosition = e.getAttribute('position');
           characterGroup.setAttribute('position', reticlePosition);
           characterGroup.setAttribute('visible', 'true');
