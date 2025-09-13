@@ -68,6 +68,17 @@
       border-radius: 4px;
     }
 
+    #instructions {
+      position: absolute;
+      bottom: 33vh;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      text-align: center;
+      font-size: 18px; /* 少し大きくして見やすくする */
+      text-shadow: 0 0 4px black; /* 影をつけて読みやすくする */
+    }
+
   </style>
 </head>
 <body>
@@ -107,7 +118,7 @@
       <img id="image-preview">
     </div>
     <button id="ar-button" class="u-button">ARを開始</button>
-    <div id="instructions" style="display: none; text-align: center;">タップしてキャラクターを配置</div>
+    <div id="instructions" style="display: none;">タップしてキャラクターを配置</div>
       <!-- 編集用UI -->
     <div id="edit-controls" style="display: none;">
       <button id="scale-down-button" class="u-button">小さく</button>
@@ -148,7 +159,7 @@
         height="1.7"
         width="0.85"
         position="0 0.85 0"
-        material="src: #character-texture; transparent: true; shader: flat; alphaTest: 0.5;"
+        material="src: #character-texture; shader: flat; alphaTest: 0.5;"
       ></a-plane>
       <!-- 影 -->
       <a-plane
