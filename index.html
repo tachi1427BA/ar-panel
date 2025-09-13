@@ -60,7 +60,7 @@
   <a-scene
     id="scene"
     webxr="optionalFeatures: hit-test, local-floor, dom-overlay; overlayElement: #main-ui;"
-    ar-hit-test="enabled: false"
+    ar-hit-test="target: #character-group; enabled: false"
     vr-mode-ui="enabled: false"
     renderer="colorManagement: true;"
   >
@@ -192,7 +192,7 @@
       });
 
       // --- AR Hit Test and Placement Logic ---
-      sceneEl.addEventListener('ar-hit-test-result', (event) => {
+      sceneEl.addEventListener('', (event) => {
         const hit = event.detail.hits[0];
         instructionsEl.textContent = "ヒットイベントを受け取りました";
         // Only show reticle if a hit is found AND the character hasn't been placed yet
@@ -206,19 +206,19 @@
       });
 
       // --- 配置処理 ---
-      sceneEl.addEventListener('click', () => {
+      sceneEl.addEventListener('select', (e) => {
         // Check if we are in AR and the reticle is visible (meaning a surface is detected)
-        if (reticle.getAttribute('visible')) {
+          instructionsEl.textContent = "設置イベント";
           // Position the character at the reticle's position
-          const reticlePosition = reticle.getAttribute('position');
+          const reticlePosition = e.getAttribute('position');
           characterGroup.setAttribute('position', reticlePosition);
           characterGroup.setAttribute('visible', 'true');
 
           // Hide the reticle and stop hit testing after placing the object
-          reticle.setAttribute('visible', 'false');
           sceneEl.setAttribute('ar-hit-test', { enabled: false });
           instructionsEl.style.display = 'none';
-        }
+
+
       });
 
       // --- 編集機能 ---
@@ -235,23 +235,46 @@
         const isHidden = editControls.classList.toggle('ui-hidden');
         e.target.textContent = isHidden ? 'UIを表示' : 'UIを隠す';
       });
-      document.getElementById('put-button').addEventListener('click', () => {
-        // Check if we are in AR and the reticle is visible (meaning a surface is detected)
-        if (reticle.getAttribute('visible')) {
-          // Position the character at the reticle's position
-          const reticlePosition = reticle.getAttribute('position');
-          characterGroup.setAttribute('position', reticlePosition);
-          characterGroup.setAttribute('visible', 'true');
 
-          // Hide the reticle and stop hit testing after placing the object
-          reticle.setAttribute('visible', 'false');
-          sceneEl.setAttribute('ar-hit-test', { enabled: false });
-          instructionsEl.style.display = 'none';
-        }
-        else{
-          instructionsEl.textContent = "レティクルがありません";
-        }
-      });
+    //   AFRAME.registerComponent('ar-hit-test', {
+		// 	init: function () {
+		// 		this.xrHitTestSource = null;
+		// 		this.viewerSpace = null;
+		// 		this.refSpace = null;
+
+		// 		this.el.sceneEl.renderer.xr.addEventListener('sessionend', (ev) => {
+		// 			this.viewerSpace = null;
+		// 			this.refSpace = null;
+		// 			this.xrHitTestSource = null;
+		// 		});
+		// 		this.el.sceneEl.renderer.xr.addEventListener('sessionstart', (ev) => {
+		// 			let session = this.el.sceneEl.renderer.xr.getSession();
+
+		// 			let element = this.el;
+		// 			session.addEventListener('select', function () {
+		// 				let position = element.getAttribute('position');
+    //         characterGroup.setAttribute('position', position);
+    //         characterGroup.setAttribute('visible', 'true');
+
+    //         // Hide the reticle and stop hit testing after placing the object
+    //         sceneEl.setAttribute('ar-hit-test', { enabled: false });
+    //         instructionsEl.style.display = 'none';
+		// 			});
+
+		// 			session.requestReferenceSpace('viewer').then((space) => {
+		// 				this.viewerSpace = space;
+		// 				session.requestHitTestSource({space: this.viewerSpace})
+		// 						.then((hitTestSource) => {
+		// 							this.xrHitTestSource = hitTestSource;
+		// 						});
+		// 			});
+
+		// 			session.requestReferenceSpace('local-floor').then((space) => {
+		// 				this.refSpace = space;
+		// 			});
+		// 		});
+		// 	},
+		// });
     });
   </script>
 </body>
