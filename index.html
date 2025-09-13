@@ -272,7 +272,7 @@
             if (supported) {
               // ARセッションを開始
               mainUI.classList.add('ar-mode');
-              instructionsEl.textContent = 'タップしてキャラクターを配置';
+              instructionsEl.textContent = '平面にカメラを向けてください';
               instructionsEl.style.display = 'block';
               editControls.style.display = 'block';
               uploadContainer.classList.add('hidden');
@@ -292,6 +292,12 @@
         }
       });
 
+      sceneEl.addEventListener('ar-hit-test-achieved', (e) => {
+        if(characterGroup.getAttribute('visible') == 'false')
+        {
+            instructionsEl.textContent ="タップしてキャラクターを配置";
+        }
+      });
 
       // --- 配置処理 ---
       sceneEl.addEventListener('ar-hit-test-select', (e) => {
