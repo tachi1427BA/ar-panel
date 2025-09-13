@@ -30,7 +30,7 @@
     #upload-container { text-align: center; }
     #image-preview { 
       display: block;
-      width: 100px; height: 300px; object-fit: cover; 
+      width: 300px; height: 300px; object-fit: contain; 
       margin: 10px auto;
       border: 2px solid #fff; 
     }
@@ -38,9 +38,35 @@
       position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); 
       display: flex; flex-wrap: wrap; justify-content: center; 
     }
-    #edit-controls.ui-hidden .u-button:not(#toggle-ui-button) {
+        #edit-controls.ui-hidden .u-button:not(#toggle-ui-button) {
       display: none;
     }
+
+    /* Preset Selector Styles */
+    #preset-selector {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr); /* 5列のグリッド */
+      gap: 8px; /* ボタン間の隙間 */
+      margin-top: 10px;
+      padding: 10px;
+      max-height: 220px; /* 高さを制限してスクロールを有効に */
+      overflow-y: auto; /* 縦方向にスクロール */
+      border-top: 1px solid #555;
+      border-bottom: 1px solid #555;
+      background-color: rgba(0,0,0,0.2); /* 範囲を分かりやすくするため背景色を設定 */
+    }
+    .preset-button {
+      /* Gridレイアウトでは不要なスタイルを削除 */
+    }
+    /* Simple scrollbar styling for Webkit browsers */
+    #preset-selector::-webkit-scrollbar {
+      width: 8px; /* 縦スクロールバーの幅 */
+    }
+    #preset-selector::-webkit-scrollbar-thumb {
+      background: #555;
+      border-radius: 4px;
+    }
+
   </style>
 </head>
 <body>
@@ -50,6 +76,34 @@
       <h3>キャラクターを選択またはアップロード</h3>
       <input type="file" id="image-upload-input" accept="image/png, image/jpeg" style="display: none;">
       <label for="image-upload-input" class="u-button">ファイルを選択</label>
+
+      <!-- Preset Images Container -->
+      <!-- Preset Images Container -->
+      <div id="preset-selector">
+        <button class="u-button preset-button" data-src="kayoko.png">シロコ</button>
+        <!-- Add more preset buttons here -->
+        <button class="u-button preset-button" data-src="ホシノ.png">ホシノ</button>
+        <button class="u-button preset-button" data-src="ノノミ.png">ノノミ</button>
+        <button class="u-button preset-button" data-src="セリカ.png">セリカ</button>
+        <button class="u-button preset-button" data-src="アヤネ.png">アヤネ</button>
+        <button class="u-button preset-button" data-src="アル.png">アル</button>
+        <button class="u-button preset-button" data-src="kayoko.png">カヨコ</button>
+        <button class="u-button preset-button" data-src="ムツキ.png">ムツキ</button>
+        <button class="u-button preset-button" data-src="ハルカ.png">ハルカ</button>
+        <button class="u-button preset-button" data-src="アリス.png">アリス</button>
+        <button class="u-button preset-button" data-src="モモイ.png">モモイ</button>
+        <button class="u-button preset-button" data-src="ミドリ.png">ミドリ</button>
+        <button class="u-button preset-button" data-src="ユズ.png">ユズ</button>
+        <button class="u-button preset-button" data-src="ヒフミ.png">ヒフミ</button>
+        <button class="u-button preset-button" data-src="ハナコ.png">ハナコ</button>
+        <button class="u-button preset-button" data-src="アズサ.png">アズサ</button>
+        <button class="u-button preset-button" data-src="コハル.png">コハル</button>
+        <button class="u-button preset-button" data-src="ユウカ.png">ユウカ</button>
+        <button class="u-button preset-button" data-src="ノア.png">ノア</button>
+        <button class="u-button preset-button" data-src="コユキ.png">コユキ</button>
+        <button class="u-button preset-button" data-src="リオ.png">リオ</button>
+      </div>
+
       <img id="image-preview">
     </div>
     <button id="ar-button" class="u-button">ARを開始</button>
@@ -143,6 +197,18 @@
 
       // --- 初期画像の設定 ---
       imagePreview.src = characterTexture.src;
+
+      // --- プリセット画像選択処理 ---
+      const presetSelector = document.getElementById('preset-selector');
+      presetSelector.addEventListener('click', (event) => {
+        const button = event.target.closest('.preset-button');
+        if (button && button.dataset.src) {
+          const newSrc = button.dataset.src;
+          // アセットとプレビューのsrcを更新
+          characterTexture.src = newSrc;
+          imagePreview.src = newSrc;
+        }
+      });
 
       // --- 画像アップロード処理 ---
       imageUploadInput.addEventListener('change', (event) => {
