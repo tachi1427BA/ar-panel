@@ -143,7 +143,7 @@
 
   <a-scene
     id="scene"
-    webxr="optionalFeatures: hit-test, local-floor, dom-overlay; overlayElement: #main-ui;"
+    webxr="optionalFeatures: hit-test, local-floor;"
     ar-hit-test="target: #reticle; type: hittest; mapSize:0.5 0.5"
     xr-mode-ui="enabled: false"
     renderer="colorManagement: true;"
@@ -154,7 +154,16 @@
         <a-assets>
       <img id="circle-texture" src="circle.png" crossorigin="anonymous">
     </a-assets>
-    <a-camera></a-camera>
+    <a-camera>
+      <a-cursor></a-cursor>
+      <!-- In-Scene UI attached to the camera -->
+      <a-entity id="in-ar-ui" visible="false">
+          <!-- Using a plane as a button, positioned in the bottom right of the view -->
+          <a-plane id="exit-ar-button-3d" class="clickable" width="0.2" height="0.1" color="#3498db" position="0.4 -0.4 -1">
+              <a-text value="Exit" align="center" color="white" width="0.4"></a-text>
+          </a-plane>
+      </a-entity>
+    </a-camera>
 
     <!-- Reticle (配置先の目印) -->
     <a-entity
@@ -204,6 +213,8 @@
       const characterShadow = document.getElementById('character-shadow');
       const characterTexture = document.getElementById('character-texture'); // The asset
       const reticle = document.getElementById('reticle'); // Reticle element
+      const inArUi = document.getElementById('in-ar-ui'); // In-scene UI
+      const exitArButton3d = document.getElementById('exit-ar-button-3d'); // In-scene button
 
       // --- アスペクト比の更新とテクスチャの再適用 ---
       characterTexture.addEventListener('load', () => {
@@ -255,55 +266,56 @@
       // --- フォールバックモードに入る関数 ---
       function enterFallbackMode(message) {
         alert(message);
-        mainUI.classList.add('ar-mode');
         uploadContainer.classList.add('hidden');
         arButton.classList.add('hidden');
         instructionsEl.textContent = "3Dビューで表示中";
         instructionsEl.style.display = 'block';
-        editControls.style.display = 'block';
+        editControls.style.display = 'flex';
         characterGroup.setAttribute('visible', 'true');
         characterGroup.setAttribute('position', '0 -0.5 -2'); // カメラの前に配置
       }
 
       // --- セッションを終了しUIをリセットする関数 ---
       function resetToMainMenu() {
-        mainUI.classList.remove('ar-mode');
-        // UIを初期状態に戻す
         uploadContainer.classList.remove('hidden');
         arButton.classList.remove('hidden');
         instructionsEl.style.display = 'none';
         editControls.style.display = 'none';
-        // オブジェクトとレティクルを非表示に
         characterGroup.setAttribute('visible', 'false');
         reticle.setAttribute('visible', 'false');
       }
 
       // --- AR開始 ---
       arButton.addEventListener('click', () => {
-        mainUI.classList.remove('ui-exited'); // 終了状態クラスを削除
-        if (navigator.xr) {
-          navigator.xr.isSessionSupported('immersive-ar').then((supported) => {
-            if (supported) {
-              // ARセッションを開始
-              mainUI.classList.add('ar-mode');
-              instructionsEl.textContent = '平面にカメラを向けてください';
-              instructionsEl.style.display = 'block';
-              editControls.style.display = 'block';
-              uploadContainer.classList.add('hidden');
-              arButton.classList.add('hidden');
-              sceneEl.enterAR();
-            } else {
-              // AR非対応の場合
-              enterFallbackMode('お使いのブラウザはARに対応していません。3Dビューで表示します。');
-            }
-          }).catch((err) => {
-            console.error(err);
-            enterFallbackMode('ARセッションの確認中にエラーが発生しました。3Dビューで表示します。');
-          });
-        } else {
-          // WebXR非対応の場合
-          enterFallbackMode('お使いのブラウザはWebXRに対応していません。3Dビューで表示します。');
-        }
+        sceneEl.enterAR().catch((err) => {
+          console.error(err);
+          enterFallbackMode('お使いのブラウザはARに対応していません。3Dビューで表示します。');
+        });
+      });
+
+      // --- ARセッション開始時 ---
+      sceneEl.addEventListener('enter-vr', () => {
+        mainUI.style.display = 'none'; // 2D UIを非表示
+        inArUi.setAttribute('visible', 'true'); // 3D UIを表示
+      });
+
+      // --- ARセッション終了時 ---
+      sceneEl.addEventListener('exit-vr', () => {
+        mainUI.style.display = 'flex'; // 2D UIを再表示
+        inArUi.setAttribute('visible', 'false'); // 3D UIを非表示
+        mainUI.classList.add('ui-exited');
+        resetToMainMenu();
+      });
+
+      // --- 3D「戻る」ボタンのクリック処理 ---
+      exitArButton3d.addEventListener('click', () => {
+        sceneEl.exitAR();
+      });
+
+      // --- HTML「戻る」ボタンのクリック処理 (フォールバックモード用) ---
+       document.getElementById('exit-ar-button').addEventListener('click', () => {
+          mainUI.classList.add('ui-exited'); // 終了状態クラスを追加
+          resetToMainMenu();
       });
 
       sceneEl.addEventListener('ar-hit-test-achieved', (e) => {
@@ -327,7 +339,7 @@
           reticle.setAttribute('geometry', 'primitive: ring; radius-inner: 0.0; radius-outer: 0.0;');
       });
 
-      // --- 編集機能 ---
+      // --- 編集機能 (フォールバックモード用) ---
       document.getElementById('scale-up-button').addEventListener('click', () => {
         const currentScale = characterGroup.getAttribute('scale');
         characterGroup.setAttribute('scale', `${currentScale.x * 1.2} ${currentScale.y * 1.2} ${currentScale.z * 1.2}`);
@@ -340,19 +352,6 @@
       document.getElementById('toggle-ui-button').addEventListener('click', (e) => {
         const isHidden = editControls.classList.toggle('ui-hidden');
         e.target.textContent = isHidden ? 'UIを表示' : 'UIを隠す';
-      });
-
-      // --- AR/フォールバックモード終了 ---
-      document.getElementById('exit-ar-button').addEventListener('click', () => {
-          mainUI.classList.add('ui-exited'); // 終了状態クラスを追加
-          resetToMainMenu();
-          sceneEl.exitAR();
-      });
-
-      // A-FrameのARセッション終了イベントをリッスン
-      sceneEl.addEventListener('exit-vr', () => {
-        mainUI.classList.add('ui-exited'); // どの方法で終了しても適用
-        resetToMainMenu();
       });
 
       // --- ドラッグでスクロールする機能 ---
