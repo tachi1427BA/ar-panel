@@ -382,6 +382,14 @@
         const walk = (y - startY);
         slider.scrollTop = scrollTop - walk;
       });
+
+      // --- プリセットボタンの改行制御 ---
+      const presetButtons = document.querySelectorAll('.preset-button');
+      presetButtons.forEach(button => {
+        if (button.textContent.length < 5) {
+          button.style.whiteSpace = 'nowrap';
+        }
+      });
     });
   </script>
 </body>
