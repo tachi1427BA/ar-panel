@@ -53,6 +53,7 @@
       <button id="scale-down-button" class="u-button">小さく</button>
       <button id="scale-up-button" class="u-button">大きく</button>
       <button id="toggle-ui-button" class="u-button">UIを隠す</button>
+      <button id="exit-ar-button" class="u-button">戻る</button>
     </div>
   </div>
 
@@ -145,11 +146,45 @@
         }
       });
 
+      // --- フォールバックモードに入る関数 ---
+      function enterFallbackMode(message) {
+        alert(message);
+        uploadContainer.classList.add('hidden');
+        arButton.classList.add('hidden');
+        mainUI.style.backgroundColor = 'transparent';
+        instructionsEl.textContent = "3Dビューで表示中";
+        instructionsEl.style.display = 'block';
+        editControls.style.display = 'block';
+        characterGroup.setAttribute('visible', 'true');
+        characterGroup.setAttribute('position', '0 -0.5 -2'); // カメラの前に配置
+      }
+
+      // --- セッションを終了しUIをリセットする関数 ---
+      function resetToMainMenu() {
+        // UIを初期状態に戻す
+        mainUI.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+        uploadContainer.classList.remove('hidden');
+        arButton.classList.remove('hidden');
+        instructionsEl.style.display = 'none';
+        editControls.style.display = 'none';
+        
+        // オブジェクトとレティクルを非表示に
+        characterGroup.setAttribute('visible', 'false');
+        reticle.setAttribute('visible', 'false');
+
+        // 次のセッションのためにヒットテストを再度有効にする
+        if (sceneEl.hasAttribute('ar-hit-test')) {
+            sceneEl.setAttribute('ar-hit-test', { enabled: true });
+        }
+      }
+
       // --- AR開始 ---
       arButton.addEventListener('click', () => {
         if (navigator.xr) {
           navigator.xr.isSessionSupported('immersive-ar').then((supported) => {
             if (supported) {
+              // ARセッションを開始
+              instructionsEl.textContent = 'タップしてキャラクターを配置';
               instructionsEl.style.display = 'block';
               editControls.style.display = 'block';
               mainUI.style.backgroundColor = 'transparent';
@@ -157,36 +192,16 @@
               arButton.classList.add('hidden');
               sceneEl.enterAR();
             } else {
-              // Fallback for non-AR browsers
-              alert('お使いのブラウザはARに対応していません。キャラクターをシーンに直接表示します。');
-              instructionsEl.textContent = "ARテスト";
-              uploadContainer.classList.add('hidden');
-              arButton.classList.add('hidden');
-              mainUI.style.backgroundColor = 'transparent';
-              instructionsEl.style.display = 'block';
-              editControls.style.display = 'block';
-              characterGroup.setAttribute('visible', 'true');
-              characterGroup.setAttribute('position', '0 -0.5 -2'); // Position in front of camera
+              // AR非対応の場合
+              enterFallbackMode('お使いのブラウザはARに対応していません。3Dビューで表示します。');
             }
           }).catch((err) => {
             console.error(err);
-            // Fallback for non-AR browsers
-            alert('ARセッションのサポート状況の確認中にエラーが発生しました。キャラクターをシーンに直接表示します。');
-            uploadContainer.classList.add('hidden');
-            arButton.classList.add('hidden');
-            mainUI.style.backgroundColor = 'transparent';
-            characterGroup.setAttribute('visible', 'true');
-            characterGroup.setAttribute('position', '0 -0.5 -2'); // Position in front of camera
+            enterFallbackMode('ARセッションの確認中にエラーが発生しました。3Dビューで表示します。');
           });
         } else {
-          // Fallback for non-XR browsers
-          alert('お使いのブラウザはWebXRに対応していません。キャラクターをシーンに直接表示します。');
-          uploadContainer.classList.add('hidden');
-          arButton.classList.add('hidden');
-          mainUI.style.backgroundColor = 'transparent';
-          instructionsEl.style.display = 'block';
-          characterGroup.setAttribute('visible', 'true');
-          characterGroup.setAttribute('position', '0 -0.5 -2'); // Position in front of camera
+          // WebXR非対応の場合
+          enterFallbackMode('お使いのブラウザはWebXRに対応していません。3Dビューで表示します。');
         }
       });
 
@@ -216,6 +231,21 @@
       document.getElementById('toggle-ui-button').addEventListener('click', (e) => {
         const isHidden = editControls.classList.toggle('ui-hidden');
         e.target.textContent = isHidden ? 'UIを表示' : 'UIを隠す';
+      });
+
+      // --- AR/フォールバックモード終了 ---
+      document.getElementById('exit-ar-button').addEventListener('click', () => {
+        if (sceneEl.is('ar-mode')) {
+          sceneEl.exitAR();
+        } else {
+          // フォールバックモードから抜ける場合、UIリセットを直接呼ぶ
+          resetToMainMenu();
+        }
+      });
+
+      // A-FrameのARセッション終了イベントをリッスン
+      sceneEl.addEventListener('exit-vr', () => {
+        resetToMainMenu();
       });
     });
   </script>
