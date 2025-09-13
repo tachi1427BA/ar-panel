@@ -120,7 +120,7 @@
   <a-scene
     id="scene"
     webxr="optionalFeatures: hit-test, local-floor, dom-overlay; overlayElement: #main-ui;"
-    ar-hit-test="target: #reticle; type: hittest; src: circle.png mapSize:0.5 0.5"
+    ar-hit-test="target: #reticle; type: hittest; mapSize:0.5 0.5"
     vr-mode-ui="enabled: false"
     renderer="colorManagement: true;"
   >
@@ -250,11 +250,6 @@
         // オブジェクトとレティクルを非表示に
         characterGroup.setAttribute('visible', 'false');
         reticle.setAttribute('visible', 'false');
-
-        // 次のセッションのためにヒットテストを再度有効にする
-        if (sceneEl.hasAttribute('ar-hit-test')) {
-            sceneEl.setAttribute('ar-hit-test', { enabled: true });
-        }
       }
 
       // --- AR開始 ---
@@ -290,8 +285,12 @@
           instructionsEl.textContent ="";
           instructionsEl.style.display = 'none';
           const reticlePosition = reticle.getAttribute('position');
+          const reticleRotation = reticle.getAttribute('rotation');
           characterGroup.setAttribute('position', reticlePosition);
           characterGroup.setAttribute('visible', 'true');
+          characterGroup.setAttribute('rotation', reticleRotation);
+          reticle.setAttribute('visible', 'false');
+
       });
 
       // --- 編集機能 ---
