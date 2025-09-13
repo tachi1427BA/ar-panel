@@ -60,7 +60,7 @@
   <a-scene
     id="scene"
     webxr="optionalFeatures: hit-test, local-floor, dom-overlay; overlayElement: #main-ui;"
-    ar-hit-test="target: #character-group; type: hittest; enabled: false;"
+    ar-hit-test="enabled: false;"
     vr-mode-ui="enabled: false"
     renderer="colorManagement: true;"
   >
@@ -69,6 +69,15 @@
     </a-assets>
 
     <a-camera></a-camera>
+
+    <!-- Reticle (配置先の目印) -->
+    <a-entity
+      id="reticle"
+      geometry="primitive: ring; radius-inner: 0.05; radius-outer: 0.08;"
+      material="color: white; shader: flat;"
+      rotation="-90 0 0"
+      visible="false"
+    ></a-entity>
 
     <!-- 配置するオブジェクト (キャラクターと影のグループ) -->
     <a-entity id="character-group" visible="false">
@@ -108,6 +117,7 @@
       const characterImage = document.getElementById('character-image');
       const characterShadow = document.getElementById('character-shadow');
       const characterTexture = document.getElementById('character-texture'); // The asset
+      const reticle = document.getElementById('reticle'); // Reticle element
 
       // --- アスペクト比の更新 ---
       characterTexture.addEventListener('load', () => {
@@ -152,6 +162,7 @@
         mainUI.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
         characterGroup.setAttribute('visible', 'false');
         sceneEl.setAttribute('ar-hit-test', { enabled: false });
+        reticle.setAttribute('visible', 'false'); // Hide reticle on exit
       });
 
       // --- AR開始 ---
@@ -193,12 +204,30 @@
         }
       });
 
+      // --- AR Hit Test and Placement Logic ---
+      sceneEl.addEventListener('ar-hit-test-results', (event) => {
+        const hit = event.detail.hits[0];
+        // Only show reticle if a hit is found AND the character hasn't been placed yet
+        if (hit && characterGroup.getAttribute('visible') === false) {
+          const hitPosition = hit.position;
+          reticle.setAttribute('visible', 'true');
+          reticle.setAttribute('position', hitPosition);
+        } else {
+          reticle.setAttribute('visible', 'false');
+        }
+      });
+
       // --- 配置処理 ---
       sceneEl.addEventListener('click', () => {
-        if (sceneEl.getAttribute('ar-hit-test').enabled) {
-          // The material is already updated via the asset system.
-          // We just need to make the character visible.
+        // Check if we are in AR and the reticle is visible (meaning a surface is detected)
+        if (sceneEl.is('ar-mode') && reticle.getAttribute('visible')) {
+          // Position the character at the reticle's position
+          const reticlePosition = reticle.getAttribute('position');
+          characterGroup.setAttribute('position', reticlePosition);
           characterGroup.setAttribute('visible', 'true');
+
+          // Hide the reticle and stop hit testing after placing the object
+          reticle.setAttribute('visible', 'false');
           sceneEl.setAttribute('ar-hit-test', { enabled: false });
           instructionsEl.style.display = 'none';
         }
