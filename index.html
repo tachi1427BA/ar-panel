@@ -160,6 +160,7 @@
             } else {
               // Fallback for non-AR browsers
               alert('お使いのブラウザはARに対応していません。キャラクターをシーンに直接表示します。');
+              instructionsEl.textContent = "ARテスト";
               uploadContainer.classList.add('hidden');
               arButton.classList.add('hidden');
               mainUI.style.backgroundColor = 'transparent';
@@ -193,6 +194,7 @@
       // --- AR Hit Test and Placement Logic ---
       sceneEl.addEventListener('ar-hit-test-result', (event) => {
         const hit = event.detail.hits[0];
+        instructionsEl.textContent = "ヒットイベントを受け取りました";
         // Only show reticle if a hit is found AND the character hasn't been placed yet
         if (hit && characterGroup.getAttribute('visible') === false) {
           const hitPosition = hit.position;
@@ -245,6 +247,9 @@
           reticle.setAttribute('visible', 'false');
           sceneEl.setAttribute('ar-hit-test', { enabled: false });
           instructionsEl.style.display = 'none';
+        }
+        else{
+          instructionsEl.textContent = "レティクルがありません";
         }
       });
     });
