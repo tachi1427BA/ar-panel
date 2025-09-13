@@ -60,14 +60,14 @@
   <a-scene
     id="scene"
     webxr="optionalFeatures: hit-test, local-floor, dom-overlay; overlayElement: #main-ui;"
-    ar-hit-test="enabled: false;"
+    ar-hit-test="target: #character-group; type: hittest; enabled: true;"
     vr-mode-ui="enabled: false"
     renderer="colorManagement: true;"
   >
     <a-assets>
       <img id="character-texture" src="kayoko.png" crossorigin="anonymous">
     </a-assets>
-
+	  <a-entity id="myobject"></a-entity>
     <a-camera></a-camera>
 
     <!-- Reticle (配置先の目印) -->
