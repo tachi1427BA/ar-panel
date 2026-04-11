@@ -21,13 +21,18 @@ export function updateSelectionStatus() {
     : 'キャラクター未選択';
 }
 
-// Show reticle only when the current character has not been placed yet.
+// Show reticle only when a character can actually be placed.
 export function updateReticleVisibility() {
   const alreadyPlaced = state.placedCharacters.some(
     el => el.dataset.characterKey === state.currentCharacterKey,
   );
-  const show = state.isHitTestActive && !state.isShootingMode && !state.isFallbackMode && !alreadyPlaced;
-  dom.reticle.setAttribute('visible', show);
+  const canPlace =
+    sessionIsActive()     &&
+    state.isHitTestActive &&
+    !state.isShootingMode &&
+    !state.isFallbackMode &&
+    !alreadyPlaced;
+  dom.reticle.setAttribute('visible', canPlace);
 }
 
 export function updateInstructions() {
