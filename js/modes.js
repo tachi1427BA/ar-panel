@@ -1,7 +1,7 @@
 import { CHAR_HEIGHT }                         from './config.js';
 import { state }                               from './state.js';
 import { dom }                                 from './dom.js';
-import { updateInstructions, updateControlStates, collapsePanel, expandPanel } from './ui.js';
+import { updateInstructions, updateControlStates, updateReticleVisibility, collapsePanel, expandPanel } from './ui.js';
 import { clearPlacedCharacters, addFallbackCharacter, setActiveCharacter } from './characters.js';
 
 export function suppressPlacementTemporarily() {
@@ -26,7 +26,7 @@ export function enterShootingMode() {
   if (!state.placedCharacters.length) return;
   state.isShootingMode = true;
   dom.mainUI.classList.add('shooting-mode');
-  dom.placementPreview.setAttribute('visible', false);
+  updateReticleVisibility();
   state.placedCharacters.forEach(c => {
     if (c.__outline) c.__outline.setAttribute('visible', false);
   });
@@ -37,9 +37,7 @@ export function exitShootingMode() {
   if (!state.isShootingMode) return;
   state.isShootingMode = false;
   dom.mainUI.classList.remove('shooting-mode');
-  if (!state.isFallbackMode && state.isHitTestActive) {
-    dom.placementPreview.setAttribute('visible', true);
-  }
+  updateReticleVisibility();
   if (state.activeCharacter && state.activeCharacter.__outline) {
     state.activeCharacter.__outline.setAttribute('visible', true);
   }
@@ -55,7 +53,7 @@ export function enterFallbackMode(message) {
   dom.exitArButton.classList.remove('hidden');
   dom.editControls.style.display = 'flex';
   dom.addCharacterButton.classList.remove('hidden');
-  dom.placementPreview.setAttribute('visible', false);
+  updateReticleVisibility();
   collapsePanel();
   if (!state.placedCharacters.length) addFallbackCharacter();
   updateInstructions();
@@ -74,7 +72,7 @@ export function resetToMainMenu() {
   dom.instructionsEl.style.display     = 'none';
   dom.editControls.style.display       = 'none';
   dom.addCharacterButton.classList.add('hidden');
-  dom.placementPreview.setAttribute('visible', false);
+  updateReticleVisibility();
   clearPlacedCharacters();
   expandPanel();
 }

@@ -1,6 +1,6 @@
 import { state }                               from './state.js';
 import { buildCharacterEntity }                from './entities.js';
-import { updateControlStates, updateSelectionStatus } from './ui.js';
+import { updateControlStates, updateSelectionStatus, updateReticleVisibility } from './ui.js';
 
 export function setActiveCharacter(el) {
   if (state.activeCharacter && state.activeCharacter.__outline) {
@@ -18,6 +18,7 @@ export function clearPlacedCharacters() {
   state.placedCharacters.forEach(el => el.remove());
   state.placedCharacters = [];
   setActiveCharacter(null);
+  updateReticleVisibility();
 }
 
 export function findPlacedCharacterByKey(key) {
@@ -28,6 +29,7 @@ export function createCharacterEntity(position, rotation) {
   const el = buildCharacterEntity(position, rotation);
   state.placedCharacters.push(el);
   setActiveCharacter(el);
+  updateReticleVisibility();
   return el;
 }
 
