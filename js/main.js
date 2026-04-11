@@ -46,8 +46,9 @@ dom.imageUploadInput.addEventListener('change', e => {
   if (!file) return;
   const url = URL.createObjectURL(file);
   state.createdObjectUrls.add(url);
-  const key = `upload:${file.name}:${file.size}:${file.lastModified}`;
-  setCurrentCharacter(url, file.name || 'アップロード画像', key);
+  const key   = `upload:${file.name}`;
+  const label = file.name.replace(/\.[^/.]+$/, '') || file.name;
+  setCurrentCharacter(url, label, key);
 });
 
 // ── Start overlay ──

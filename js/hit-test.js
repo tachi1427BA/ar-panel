@@ -70,8 +70,21 @@ AFRAME.registerComponent('ar-continuous-hit-test', {
       if (pose && target) {
         const p = pose.transform.position;
         const q = pose.transform.orientation;
-        target.object3D.position.set(p.x, p.y, p.z);
-        target.object3D.quaternion.set(q.x, q.y, q.z, q.w);
+
+        // Use setAttribute so getAttribute() reflects the hit-test position.
+        target.setAttribute('position', { x: p.x, y: p.y, z: p.z });
+
+        // Convert quaternion → Euler (degrees) for A-Frame rotation attribute.
+        /* global THREE */
+        const euler = new THREE.Euler().setFromQuaternion(
+          new THREE.Quaternion(q.x, q.y, q.z, q.w)
+        );
+        const toDeg = THREE.MathUtils.radToDeg;
+        target.setAttribute('rotation', {
+          x: toDeg(euler.x),
+          y: toDeg(euler.y),
+          z: toDeg(euler.z),
+        });
       }
       if (!this.hasHit) {
         this.hasHit = true;
