@@ -10,9 +10,10 @@ export function collapsePanel() { dom.charPanel.classList.remove('expanded'); }
 export function expandPanel()   { dom.charPanel.classList.add('expanded'); }
 
 export function updateControlStates() {
-  dom.scaleDownButton.disabled = !state.activeCharacter;
-  dom.scaleUpButton.disabled   = !state.activeCharacter;
-  dom.shootModeButton.disabled = state.placedCharacters.length === 0;
+  dom.scaleDownButton.disabled          = !state.activeCharacter;
+  dom.scaleUpButton.disabled            = !state.activeCharacter;
+  dom.deleteCharacterButton.disabled    = !state.activeCharacter;
+  dom.shootModeButton.disabled          = state.placedCharacters.length === 0;
 }
 
 export function updateSelectionStatus() {

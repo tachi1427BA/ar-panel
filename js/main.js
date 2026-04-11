@@ -13,6 +13,7 @@ import {
   placeCharacterAt,
   addFallbackCharacter,
   setActiveCharacter,
+  removeActiveCharacter,
 } from './characters.js';
 import {
   enterShootingMode,
@@ -94,6 +95,7 @@ dom.scaleDownButton.addEventListener('click', () => {
 });
 
 dom.shootModeButton.addEventListener('click',   () => enterShootingMode());
+dom.deleteCharacterButton.addEventListener('click', () => removeActiveCharacter());
 dom.addCharacterButton.addEventListener('click', () => addFallbackCharacter());
 dom.exitArButton.addEventListener('click',       () => requestExitToMainMenu());
 

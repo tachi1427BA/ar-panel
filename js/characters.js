@@ -14,7 +14,16 @@ export function setActiveCharacter(el) {
   updateControlStates();
 }
 
-export function clearPlacedCharacters() {
+export function removeActiveCharacter() {
+  const el = state.activeCharacter;
+  if (!el) return;
+  state.placedCharacters = state.placedCharacters.filter(c => c !== el);
+  el.remove();
+  setActiveCharacter(null);
+  updateReticleVisibility();
+}
+
+
   state.placedCharacters.forEach(el => el.remove());
   state.placedCharacters = [];
   setActiveCharacter(null);
