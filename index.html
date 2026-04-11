@@ -27,55 +27,6 @@
       color: white; z-index: 1000;
       pointer-events: none;
     }
-    /* Hide all children in shooting mode except shutter button and photo preview */
-    #main-ui.shooting-mode > *:not(#shutter-button):not(#photo-preview) {
-      opacity: 0;
-      visibility: hidden;
-      pointer-events: none !important;
-    }
-    /* Shutter button: visible even in shooting mode */
-    #shutter-button {
-      position: fixed;
-      bottom: 48px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 76px; height: 76px;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.95);
-      border: 5px solid rgba(200,200,200,0.8);
-      font-size: 30px;
-      cursor: pointer;
-      z-index: 2000;
-      pointer-events: auto;
-      display: none;
-      align-items: center; justify-content: center;
-      box-shadow: 0 0 0 5px rgba(255,255,255,0.35);
-    }
-    #main-ui.shooting-mode > #shutter-button {
-      display: flex;
-    }
-
-    /* Photo preview overlay */
-    #photo-preview {
-      display: none;
-      position: fixed; inset: 0;
-      z-index: 5000;
-      background: rgba(0,0,0,0.92);
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-    }
-    #photo-preview.visible { display: flex; }
-    #photo-preview-img {
-      max-width: 100%;
-      max-height: calc(100vh - 100px);
-      object-fit: contain;
-      border-radius: 8px;
-    }
-    #photo-preview-actions {
-      display: flex; gap: 12px;
-    }
 
     /* ── Top bar ── */
     #top-bar {
@@ -216,7 +167,6 @@
       <button id="scale-down-button" class="u-button" disabled>小さく</button>
       <button id="scale-up-button" class="u-button" disabled>大きく</button>
       <button id="delete-character-button" class="u-button" disabled style="background-color:#e74c3c;">削除</button>
-      <button id="shoot-mode-button" class="u-button" disabled>撮影モード</button>
     </div>
 
     <!-- ── Character selection panel ── -->
@@ -261,17 +211,6 @@
       </div>
     </div>
 
-    <!-- Shutter button: visible only in shooting mode, inside #main-ui so scene pointer ignores it -->
-    <button id="shutter-button" aria-label="撮影"></button>
-
-    <!-- Photo preview overlay: inside #main-ui so it appears in WebXR DOM overlay -->
-    <div id="photo-preview" role="dialog" aria-label="撮影プレビュー">
-      <img id="photo-preview-img" alt="撮影した写真">
-      <div id="photo-preview-actions">
-        <button id="photo-save-button" class="u-button">保存</button>
-        <button id="photo-close-button" class="u-button" style="background:#555;">閉じる</button>
-      </div>
-    </div>
 
   </div><!-- #main-ui -->
 

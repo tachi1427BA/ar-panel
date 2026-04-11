@@ -13,7 +13,6 @@ export function updateControlStates() {
   dom.scaleDownButton.disabled          = !state.activeCharacter;
   dom.scaleUpButton.disabled            = !state.activeCharacter;
   dom.deleteCharacterButton.disabled    = !state.activeCharacter;
-  dom.shootModeButton.disabled          = state.placedCharacters.length === 0;
 }
 
 export function updateSelectionStatus() {
@@ -30,14 +29,13 @@ export function updateReticleVisibility() {
   const canPlace =
     sessionIsActive()     &&
     state.isHitTestActive &&
-    !state.isShootingMode &&
     !state.isFallbackMode &&
     !alreadyPlaced;
   dom.reticle.setAttribute('visible', canPlace);
 }
 
 export function updateInstructions() {
-  if (!sessionIsActive() || state.isShootingMode) {
+  if (!sessionIsActive()) {
     dom.instructionsEl.style.display = 'none';
     return;
   }

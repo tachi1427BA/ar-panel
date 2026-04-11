@@ -20,66 +20,6 @@ export function getActiveXrSession() {
   try { return dom.sceneEl.renderer.xr.getSession(); } catch (_) { return null; }
 }
 
-// ── Camera stream for photo capture ──
-
-let cameraStream  = null;
-let cameraVideo   = null;
-
-export function getCameraVideo() { return cameraVideo; }
-
-async function startCameraStream() {
-  if (cameraStream) return;
-  try {
-    cameraStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment' },
-      audio: false,
-    });
-    cameraVideo           = document.createElement('video');
-    cameraVideo.srcObject = cameraStream;
-    cameraVideo.playsInline = true;
-    cameraVideo.muted       = true;
-    cameraVideo.autoplay    = true;
-    await cameraVideo.play().catch(() => {});
-  } catch (err) {
-    console.warn('Camera stream unavailable for photo:', err);
-  }
-}
-
-function stopCameraStream() {
-  if (cameraStream) {
-    cameraStream.getTracks().forEach(t => t.stop());
-    cameraStream = null;
-  }
-  cameraVideo = null;
-}
-
-// ── Shooting mode ──
-
-export function enterShootingMode() {
-  if (!state.placedCharacters.length) return;
-  state.isShootingMode = true;
-  dom.mainUI.classList.add('shooting-mode');
-  updateReticleVisibility();
-  state.placedCharacters.forEach(c => {
-    if (c.__outline) c.__outline.setAttribute('visible', false);
-  });
-  updateInstructions();
-  startCameraStream();
-}
-
-export function exitShootingMode() {
-  if (!state.isShootingMode) return;
-  state.isShootingMode = false;
-  dom.mainUI.classList.remove('shooting-mode');
-  dom.photoPreview.classList.remove('visible');
-  updateReticleVisibility();
-  if (state.activeCharacter && state.activeCharacter.__outline) {
-    state.activeCharacter.__outline.setAttribute('visible', true);
-  }
-  updateInstructions();
-  stopCameraStream();
-}
-
 // ── Session mode ──
 
 export function enterFallbackMode(message) {
@@ -100,7 +40,6 @@ export function resetToMainMenu() {
   clearExitTimeout();
   state.isExitingSession      = false;
   dom.exitArButton.disabled   = false;
-  exitShootingMode();
   state.isFallbackMode        = false;
   state.suppressNextPlacement = false;
   dom.exitArButton.classList.add('hidden');
@@ -204,11 +143,6 @@ export function findTappedCharacter(clientX, clientY) {
 
 export function handleScenePointer(clientX, clientY) {
   if (dom.editControls.style.display === 'none') return;
-  if (state.isShootingMode) {
-    exitShootingMode();
-    suppressPlacementTemporarily();
-    return;
-  }
   const hit = findTappedCharacter(clientX, clientY);
   if (hit) {
     setActiveCharacter(hit);

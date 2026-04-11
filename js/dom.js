@@ -12,7 +12,6 @@ export const dom = {
   scaleDownButton:    document.getElementById('scale-down-button'),
   scaleUpButton:      document.getElementById('scale-up-button'),
   deleteCharacterButton: document.getElementById('delete-character-button'),
-  shootModeButton:    document.getElementById('shoot-mode-button'),
   charPanel:          document.getElementById('char-panel'),
   charPanelHandle:    document.getElementById('char-panel-handle'),
   charPanelLabel:     document.getElementById('char-panel-label'),
@@ -23,9 +22,4 @@ export const dom = {
   charPanelBody:      document.getElementById('char-panel-body'),
   reticle:            document.getElementById('reticle'),
   charactersContainer: document.getElementById('characters-container'),
-  shutterButton:      document.getElementById('shutter-button'),
-  photoPreview:       document.getElementById('photo-preview'),
-  photoPreviewImg:    document.getElementById('photo-preview-img'),
-  photoSaveButton:    document.getElementById('photo-save-button'),
-  photoCloseButton:   document.getElementById('photo-close-button'),
 };

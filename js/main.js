@@ -17,14 +17,11 @@ import {
   removeActiveCharacter,
 } from './characters.js';
 import {
-  enterShootingMode,
-  exitShootingMode,
   requestExitToMainMenu,
   finishExitToMainMenu,
   startARSession,
   suppressPlacementTemporarily,
   handleScenePointer,
-  getCameraVideo,
 } from './modes.js';
 
 // ── Image preview dimensions ──
@@ -101,10 +98,6 @@ dom.sceneEl.addEventListener('ar-hit-test-lost', () => {
 
 dom.sceneEl.addEventListener('ar-hit-test-select', () => {
   if (state.suppressNextPlacement) { state.suppressNextPlacement = false; return; }
-  if (state.isShootingMode) {
-    exitShootingMode();
-    return;
-  }
   const pos = dom.reticle.getAttribute('position');
   const rot = dom.reticle.getAttribute('rotation');
   if (!pos) return;
@@ -127,84 +120,9 @@ dom.scaleDownButton.addEventListener('click', () => {
   state.activeCharacter.setAttribute('scale', `${s.x * 0.8} ${s.y * 0.8} ${s.z * 0.8}`);
 });
 
-dom.shootModeButton.addEventListener('click',   () => enterShootingMode());
 dom.deleteCharacterButton.addEventListener('click', () => removeActiveCharacter());
 dom.addCharacterButton.addEventListener('click', () => addFallbackCharacter());
 dom.exitArButton.addEventListener('click',       () => requestExitToMainMenu());
-
-// ── Photo capture ──
-
-let capturedDataUrl = null;
-
-function showPhotoPreview(dataUrl) {
-  capturedDataUrl = dataUrl;
-  dom.photoPreviewImg.src = dataUrl;
-  dom.photoPreview.classList.add('visible');
-}
-
-function capturePhoto() {
-  dom.sceneEl.systems['photo-capture'].request((arCanvas) => {
-    const video = getCameraVideo();
-    // arCanvas is in physical pixels; final output should match.
-    const w = arCanvas.width;
-    const h = arCanvas.height;
-
-    const final = document.createElement('canvas');
-    final.width  = w;
-    final.height = h;
-    const ctx = final.getContext('2d');
-
-    if (video && video.readyState >= 2) {
-      // Scale video to fill the physical-pixel canvas.
-      ctx.drawImage(video, 0, 0, w, h);
-    } else {
-      // Fallback: transparent so we at least see the characters.
-      // (getUserMedia may fail on some devices while WebXR is active.)
-      ctx.clearRect(0, 0, w, h);
-    }
-    ctx.drawImage(arCanvas, 0, 0);
-
-    showPhotoPreview(final.toDataURL('image/jpeg', 0.92));
-  });
-}
-
-// Shutter button is inside #main-ui, so the global pointerup handler ignores it.
-dom.shutterButton.addEventListener('pointerup', e => {
-  e.stopPropagation();
-  capturePhoto();
-});
-
-dom.photoSaveButton.addEventListener('click', async () => {
-  if (!capturedDataUrl) return;
-  const fileName = `ar_photo_${Date.now()}.png`;
-
-  const res  = await fetch(capturedDataUrl);
-  const blob = await res.blob();
-  const file = new File([blob], fileName, { type: 'image/png' });
-
-  if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-    try {
-      await navigator.share({ files: [file], title: 'AR写真' });
-      return;
-    } catch (err) {
-      if (err.name === 'AbortError') return;
-    }
-  }
-
-  // Fallback download
-  const url = URL.createObjectURL(blob);
-  const a   = document.createElement('a');
-  a.href     = url;
-  a.download = fileName;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 30000);
-});
-
-dom.photoCloseButton.addEventListener('click', () => {
-  exitShootingMode();
-});
 
 // ── Global pointer (scene tap) ──
 // Suppress XR placement when the tap target is inside the UI overlay.
