@@ -27,7 +27,8 @@
       color: white; z-index: 1000;
       pointer-events: none;
     }
-    #main-ui.shooting-mode > * {
+    /* Hide all children in shooting mode except shutter button and photo preview */
+    #main-ui.shooting-mode > *:not(#shutter-button):not(#photo-preview) {
       opacity: 0;
       visibility: hidden;
       pointer-events: none !important;
@@ -52,9 +53,6 @@
     }
     #main-ui.shooting-mode > #shutter-button {
       display: flex;
-      opacity: 1;
-      visibility: visible;
-      pointer-events: auto !important;
     }
 
     /* Photo preview overlay */
@@ -266,16 +264,16 @@
     <!-- Shutter button: visible only in shooting mode, inside #main-ui so scene pointer ignores it -->
     <button id="shutter-button" aria-label="撮影">📸</button>
 
-  </div><!-- #main-ui -->
-
-  <!-- Photo preview overlay (outside #main-ui to avoid shooting-mode CSS) -->
-  <div id="photo-preview" role="dialog" aria-label="撮影プレビュー">
-    <img id="photo-preview-img" alt="撮影した写真">
-    <div id="photo-preview-actions">
-      <button id="photo-save-button" class="u-button">保存</button>
-      <button id="photo-close-button" class="u-button" style="background:#555;">閉じる</button>
+    <!-- Photo preview overlay: inside #main-ui so it appears in WebXR DOM overlay -->
+    <div id="photo-preview" role="dialog" aria-label="撮影プレビュー">
+      <img id="photo-preview-img" alt="撮影した写真">
+      <div id="photo-preview-actions">
+        <button id="photo-save-button" class="u-button">保存</button>
+        <button id="photo-close-button" class="u-button" style="background:#555;">閉じる</button>
+      </div>
     </div>
-  </div>
+
+  </div><!-- #main-ui -->
 
   <a-scene
     id="scene"
