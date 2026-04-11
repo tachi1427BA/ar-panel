@@ -80,11 +80,13 @@ export function buildCharacterEntity(position, rotation) {
       color: shadowColor,
       transparent: true,
       opacity: shadowOpacity,
-      alphaTest: 0.5,
+      alphaTest: 0.1,
       depthWrite: false,
+      depthTest: false,
       side: THREE.DoubleSide,
     });
     const mesh = new THREE.Mesh(geometry, material);
+    mesh.renderOrder = 1;
     // Lay flat on the ground: rotate -90° around X, pivot from feet forward
     mesh.rotation.x = -Math.PI / 2;
     mesh.position.set(0, 0.005, -CHAR_HEIGHT / 2);
