@@ -5,25 +5,33 @@ import { dom }         from './dom.js';
 function cloneVector(v) { return { x: v.x, y: v.y, z: v.z }; }
 
 export function buildBodyElement() {
-  const el = document.createElement('a-plane');
-  el.setAttribute('height', CHAR_HEIGHT);
-  el.setAttribute('width', state.currentCharacterWidth);
+  // Use a raw a-entity instead of a-plane so we can apply the texture via
+  // THREE.TextureLoader directly (same pattern as the shadow mesh).
+  // This bypasses A-Frame's material component, which can fail on data/blob URLs.
+  const el = document.createElement('a-entity');
   el.setAttribute('position', `0 ${CHAR_HEIGHT / 2} 0`);
-  // Don't pass src to A-Frame's material — blob URLs fail silently in WebXR.
-  // Load the texture via THREE.TextureLoader (same approach used for the shadow).
-  el.setAttribute('material', { shader: 'flat', transparent: true, alphaTest: 0.5 });
-  const src = state.currentCharacterSrc;
+
+  const src   = state.currentCharacterSrc;
+  const width = state.currentCharacterWidth;
+
   el.addEventListener('loaded', () => {
     /* global THREE */
     new THREE.TextureLoader().load(src, (tex) => {
+      if (!el.parentNode) return;
       tex.colorSpace = THREE.SRGBColorSpace;
-      const mesh = el.getObject3D('mesh');
-      if (mesh && mesh.material) {
-        mesh.material.map = tex;
-        mesh.material.needsUpdate = true;
-      }
+      const geometry = new THREE.PlaneGeometry(width, CHAR_HEIGHT);
+      const material = new THREE.MeshBasicMaterial({
+        map:         tex,
+        transparent: true,
+        alphaTest:   0.5,
+        side:        THREE.FrontSide,
+      });
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.renderOrder = 1;
+      el.object3D.add(mesh);
     });
   });
+
   return el;
 }
 
@@ -71,11 +79,8 @@ export function buildCharacterEntity(position, rotation) {
   el.appendChild(body);
   el.__outline = outline;
 
-  // Ensure body and outline always render AFTER the shadow (renderOrder 0)
-  body.addEventListener('loaded', () => {
-    const mesh = body.getObject3D('mesh');
-    if (mesh) mesh.renderOrder = 1;
-  });
+  // Ensure outline always renders AFTER the shadow (renderOrder 0).
+  // Body mesh renderOrder is set inside buildBodyElement.
   outline.addEventListener('loaded', () => {
     outline.object3D.traverse(obj => { if (obj.isMesh) obj.renderOrder = 1; });
   });

@@ -52,31 +52,34 @@ document.querySelector('label[for="image-upload-input"]').addEventListener('poin
 dom.imageUploadInput.addEventListener('change', e => {
   const file = e.target.files[0];
   if (!file) return;
-  const url   = URL.createObjectURL(file);
-  state.createdObjectUrls.add(url);
   const key   = `upload:${file.name}`;
   const label = file.name.replace(/\.[^/.]+$/, '') || file.name;
 
-  // Add or update the uploaded image button in the preset grid.
-  let btn = dom.presetSelector.querySelector(`[data-char-key="${CSS.escape(key)}"]`);
-  if (btn) {
-    btn.dataset.src = url;
-  } else {
-    btn = document.createElement('button');
-    btn.className        = 'u-button preset-button';
-    btn.dataset.src      = url;
-    btn.dataset.charKey  = key;
-    btn.textContent      = label;
-    dom.presetSelector.insertBefore(btn, dom.presetSelector.firstChild);
-  }
+  const reader = new FileReader();
+  reader.onload = (evt) => {
+    const dataUrl = evt.target.result;
 
-  setCurrentCharacter(url, label, key);
+    // Add or update the uploaded image button in the preset grid.
+    let btn = dom.presetSelector.querySelector(`[data-char-key="${CSS.escape(key)}"]`);
+    if (btn) {
+      btn.dataset.src = dataUrl;
+    } else {
+      btn = document.createElement('button');
+      btn.className       = 'u-button preset-button';
+      btn.dataset.src     = dataUrl;
+      btn.dataset.charKey = key;
+      btn.textContent     = label;
+      dom.presetSelector.insertBefore(btn, dom.presetSelector.firstChild);
+    }
 
-  if (pendingARResume) {
-    pendingARResume = false;
-    // Wait for the OS file picker to fully dismiss before re-entering AR.
-    setTimeout(() => startARSession(), 500);
-  }
+    setCurrentCharacter(dataUrl, label, key);
+
+    if (pendingARResume) {
+      pendingARResume = false;
+      setTimeout(() => startARSession(), 500);
+    }
+  };
+  reader.readAsDataURL(file);
 });
 
 // ── Start overlay ──
