@@ -6,6 +6,7 @@
   <meta name="description" content="AR立ち絵Viewer">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <script src="js/hit-test.js"></script>
   <style>
     body { margin: 0; font-family: sans-serif; background: #111; }
 
@@ -220,7 +221,7 @@
   <a-scene
     id="scene"
     webxr="optionalFeatures: hit-test, local-floor, dom-overlay; overlayElement: #main-ui;"
-    ar-hit-test="target: #reticle; type: footprint"
+    ar-continuous-hit-test="target: #reticle"
     xr-mode-ui="enabled: false"
     renderer="colorManagement: true;"
   >
