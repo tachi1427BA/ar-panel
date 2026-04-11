@@ -23,7 +23,7 @@ export function removeActiveCharacter() {
   updateReticleVisibility();
 }
 
-
+export function clearPlacedCharacters() {
   state.placedCharacters.forEach(el => el.remove());
   state.placedCharacters = [];
   setActiveCharacter(null);
