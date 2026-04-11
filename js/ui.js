@@ -13,7 +13,9 @@ export function updateControlStates() {
   dom.scaleDownButton.disabled          = !state.activeCharacter;
   dom.scaleUpButton.disabled            = !state.activeCharacter;
   dom.deleteCharacterButton.disabled    = !state.activeCharacter;
-  dom.shootModeButton.disabled          = state.placedCharacters.length === 0;
+  if (dom.shootModeButton) {
+    dom.shootModeButton.disabled        = state.placedCharacters.length === 0;
+  }
 }
 
 export function updateSelectionStatus() {

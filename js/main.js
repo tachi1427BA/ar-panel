@@ -6,6 +6,7 @@ import { dom }                  from './dom.js';
 import {
   setCurrentCharacter,
   updateCurrentCharacterDimensions,
+  updateControlStates,
   updateInstructions,
   updateReticleVisibility,
   sessionIsActive,
@@ -108,6 +109,7 @@ dom.sceneEl.addEventListener('ar-hit-test-select', () => {
   const rot = dom.reticle.getAttribute('rotation');
   if (!pos) return;
   placeCharacterAt(pos, rot || { x: 0, y: 0, z: 0 });
+  updateControlStates();
   updateInstructions();
 });
 
@@ -128,7 +130,7 @@ dom.scaleDownButton.addEventListener('click', () => {
 
 dom.shootModeButton.addEventListener('click',   () => enterShootingMode());
 dom.deleteCharacterButton.addEventListener('click', () => removeActiveCharacter());
-dom.addCharacterButton.addEventListener('click', () => addFallbackCharacter());
+dom.addCharacterButton.addEventListener('click', () => { addFallbackCharacter(); updateControlStates(); });
 dom.exitArButton.addEventListener('click',       () => requestExitToMainMenu());
 
 // ── Global pointer (scene tap) ──
