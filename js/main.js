@@ -145,6 +145,7 @@ function showPhotoPreview(dataUrl) {
 function capturePhoto() {
   dom.sceneEl.systems['photo-capture'].request((arCanvas) => {
     const video = getCameraVideo();
+    // arCanvas is in physical pixels; final output should match.
     const w = arCanvas.width;
     const h = arCanvas.height;
 
@@ -154,14 +155,16 @@ function capturePhoto() {
     const ctx = final.getContext('2d');
 
     if (video && video.readyState >= 2) {
+      // Scale video to fill the physical-pixel canvas.
       ctx.drawImage(video, 0, 0, w, h);
     } else {
-      ctx.fillStyle = '#000';
-      ctx.fillRect(0, 0, w, h);
+      // Fallback: transparent so we at least see the characters.
+      // (getUserMedia may fail on some devices while WebXR is active.)
+      ctx.clearRect(0, 0, w, h);
     }
     ctx.drawImage(arCanvas, 0, 0);
 
-    showPhotoPreview(final.toDataURL('image/png'));
+    showPhotoPreview(final.toDataURL('image/jpeg', 0.92));
   });
 }
 

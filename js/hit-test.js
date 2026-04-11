@@ -108,11 +108,15 @@ AFRAME.registerComponent('ar-continuous-hit-test', {
 /**
  * photo-capture system
  *
- * Executes the WebGL render-to-renderTarget inside the A-Frame / XR frame
- * loop (system tick), where XR camera matrices are valid and the WebGL
- * context is in an active XR state.  Calling renderer.render() from a
- * regular requestAnimationFrame between XR frames can silently produce black
- * output because the XR compositor restricts WebGL access between frames.
+ * Runs in tock() — AFTER A-Frame's normal scene render — so the XR camera
+ * matrices are fully updated for the current frame.
+ *
+ * We temporarily disable renderer.xr.enabled before our custom render call.
+ * This prevents THREE.js from re-invoking the XR ArrayCamera (with its
+ * device-pixel-space viewport coordinates) and instead uses sceneEl.camera
+ * directly.  sceneEl.camera.matrixWorld already holds the correct XR pose
+ * because xr.updateCamera() was called during the normal render that just
+ * completed, and preserveDrawingBuffer keeps that state alive.
  *
  * Usage (from main.js):
  *   sceneEl.systems['photo-capture'].request(arCanvas => { ... });
@@ -122,7 +126,7 @@ AFRAME.registerSystem('photo-capture', {
     this.captureCallback = null;
   },
 
-  tick() {
+  tock() {
     if (!this.captureCallback) return;
     const cb = this.captureCallback;
     this.captureCallback = null;
@@ -132,12 +136,20 @@ AFRAME.registerSystem('photo-capture', {
     const renderer = sceneEl.renderer;
     const scene    = sceneEl.object3D;
     const camera   = sceneEl.camera;
-    const w        = window.innerWidth;
-    const h        = window.innerHeight;
+
+    // Use the canvas's actual physical-pixel dimensions so the aspect ratio
+    // and scale exactly match what the user sees in AR.
+    const w = renderer.domElement.width;
+    const h = renderer.domElement.height;
 
     const target          = new THREE.WebGLRenderTarget(w, h);
     const savedTarget     = renderer.getRenderTarget();
     const savedClearAlpha = renderer.getClearAlpha();
+
+    // Disable XR override so renderer.render() uses our camera as-is,
+    // without re-mapping sub-camera viewports to device-pixel coordinates.
+    const xrWasEnabled = renderer.xr.enabled;
+    renderer.xr.enabled = false;
 
     renderer.setRenderTarget(target);
     renderer.setClearAlpha(0);
@@ -145,12 +157,13 @@ AFRAME.registerSystem('photo-capture', {
     renderer.render(scene, camera);
     renderer.setRenderTarget(savedTarget);
     renderer.setClearAlpha(savedClearAlpha);
+    renderer.xr.enabled = xrWasEnabled;
 
     const pixels = new Uint8Array(w * h * 4);
     renderer.readRenderTargetPixels(target, 0, 0, w, h, pixels);
     target.dispose();
 
-    // Build an ImageData canvas with Y-axis flipped (WebGL is bottom-up).
+    // Build a canvas with Y-axis flipped (WebGL is bottom-up).
     const arCanvas  = document.createElement('canvas');
     arCanvas.width  = w;
     arCanvas.height = h;
