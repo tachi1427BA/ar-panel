@@ -20,38 +20,7 @@ export function getActiveXrSession() {
   try { return dom.sceneEl.renderer.xr.getSession(); } catch (_) { return null; }
 }
 
-// ── Camera stream for photo capture ──
 
-let cameraStream  = null;
-let cameraVideo   = null;
-
-export function getCameraVideo() { return cameraVideo; }
-
-async function startCameraStream() {
-  if (cameraStream) return;
-  try {
-    cameraStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment' },
-      audio: false,
-    });
-    cameraVideo           = document.createElement('video');
-    cameraVideo.srcObject = cameraStream;
-    cameraVideo.playsInline = true;
-    cameraVideo.muted       = true;
-    cameraVideo.autoplay    = true;
-    await cameraVideo.play().catch(() => {});
-  } catch (err) {
-    console.warn('Camera stream unavailable for photo:', err);
-  }
-}
-
-function stopCameraStream() {
-  if (cameraStream) {
-    cameraStream.getTracks().forEach(t => t.stop());
-    cameraStream = null;
-  }
-  cameraVideo = null;
-}
 
 // ── Shooting mode ──
 
@@ -64,7 +33,6 @@ export function enterShootingMode() {
     if (c.__outline) c.__outline.setAttribute('visible', false);
   });
   updateInstructions();
-  startCameraStream();
 }
 
 export function exitShootingMode() {
@@ -77,7 +45,6 @@ export function exitShootingMode() {
     state.activeCharacter.__outline.setAttribute('visible', true);
   }
   updateInstructions();
-  stopCameraStream();
 }
 
 // ── Session mode ──

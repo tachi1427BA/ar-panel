@@ -24,7 +24,6 @@ import {
   startARSession,
   suppressPlacementTemporarily,
   handleScenePointer,
-  getCameraVideo,
 } from './modes.js';
 
 // ── Image preview dimensions ──
@@ -144,27 +143,9 @@ function showPhotoPreview(dataUrl) {
 
 function capturePhoto() {
   dom.sceneEl.systems['photo-capture'].request((arCanvas) => {
-    const video = getCameraVideo();
-    // arCanvas is in physical pixels; final output should match.
-    const w = arCanvas.width;
-    const h = arCanvas.height;
-
-    const final = document.createElement('canvas');
-    final.width  = w;
-    final.height = h;
-    const ctx = final.getContext('2d');
-
-    if (video && video.readyState >= 2) {
-      // Scale video to fill the physical-pixel canvas.
-      ctx.drawImage(video, 0, 0, w, h);
-    } else {
-      // Fallback: transparent so we at least see the characters.
-      // (getUserMedia may fail on some devices while WebXR is active.)
-      ctx.clearRect(0, 0, w, h);
-    }
-    ctx.drawImage(arCanvas, 0, 0);
-
-    showPhotoPreview(final.toDataURL('image/jpeg', 0.92));
+    // arCanvas already contains camera background (if camera-access is
+    // available) composited with the AR characters.
+    showPhotoPreview(arCanvas.toDataURL('image/jpeg', 0.92));
   });
 }
 
