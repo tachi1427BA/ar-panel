@@ -225,7 +225,6 @@
     renderer="colorManagement: true;"
   >
     <a-assets>
-      <img id="character-texture" src="シロコ.png" crossorigin="anonymous">
       <img id="circle-texture" src="circle.png" crossorigin="anonymous">
     </a-assets>
     <a-camera></a-camera>
@@ -372,37 +371,30 @@
       }
 
       function buildShadowElement() {
-        const size = Math.max(currentCharacterWidth * 0.7, 0.56);
-        const el = document.createElement('a-plane');
-        el.setAttribute('height', size);
-        el.setAttribute('width', size);
+        const radius = Math.max(currentCharacterWidth * 0.35, 0.28);
+        const el = document.createElement('a-entity');
         el.setAttribute('position', '0 0.005 0');
         el.setAttribute('rotation', '-90 0 0');
-        el.setAttribute('material', {
-          src: 'circle.png',
-          color: '#000',
-          opacity: 0.28,
-          transparent: true,
-          shader: 'flat',
-          depthWrite: false,
+        el.setAttribute('geometry', `primitive: circle; radius: ${radius}; segments: 32`);
+        el.setAttribute('material', 'color: #000000; opacity: 0.28; transparent: true; shader: flat; depthWrite: false');
+        el.addEventListener('loaded', () => {
+          const mesh = el.getObject3D('mesh');
+          if (mesh && mesh.material) { mesh.material.map = null; mesh.material.needsUpdate = true; }
         });
         return el;
       }
 
       function buildSelectionRingElement() {
-        const size = Math.max(currentCharacterWidth * 1.6, 1.1);
-        const el = document.createElement('a-plane');
-        el.setAttribute('height', size);
-        el.setAttribute('width', size);
+        const radius = Math.max(currentCharacterWidth * 0.8, 0.55);
+        const el = document.createElement('a-entity');
         el.setAttribute('position', '0 0.02 0');
         el.setAttribute('rotation', '-90 0 0');
         el.setAttribute('visible', false);
-        el.setAttribute('material', {
-          src: 'circle.png',
-          transparent: true,
-          opacity: 0.65,
-          shader: 'flat',
-          depthWrite: false,
+        el.setAttribute('geometry', `primitive: circle; radius: ${radius}; segments: 32`);
+        el.setAttribute('material', 'color: #ffffff; opacity: 0.65; transparent: true; shader: flat; depthWrite: false');
+        el.addEventListener('loaded', () => {
+          const mesh = el.getObject3D('mesh');
+          if (mesh && mesh.material) { mesh.material.map = null; mesh.material.needsUpdate = true; }
         });
         return el;
       }
