@@ -197,11 +197,14 @@
       let currentCharacterSrc = characterTexture.getAttribute('src') || characterTexture.src;
       let currentCharacterWidth = 0.85;
       let currentCharacterLabel = 'シロコ';
+      let currentCharacterKey = currentCharacterSrc;
       let activeCharacter = null;
       let placedCharacters = [];
       let isFallbackMode = false;
       let isShootingMode = false;
       let suppressNextPlacement = false;
+      let isExitingSession = false;
+      let exitSessionTimeoutId = null;
       let characterCounter = 0;
       const createdObjectUrls = new Set();
 
@@ -214,6 +217,19 @@
 
       function cloneVector(vector) {
         return { x: vector.x, y: vector.y, z: vector.z };
+      }
+
+      function clearExitSessionTimeout() {
+        if (exitSessionTimeoutId !== null) {
+          window.clearTimeout(exitSessionTimeoutId);
+          exitSessionTimeoutId = null;
+        }
+      }
+
+      function getActiveXrSession() {
+        return sceneEl.renderer && sceneEl.renderer.xr && sceneEl.renderer.xr.getSession
+          ? sceneEl.renderer.xr.getSession()
+          : null;
       }
 
       function sessionIsActive() {
@@ -276,13 +292,19 @@
         updateControlStates();
       }
 
+      function findPlacedCharacterByKey(characterKey) {
+        return placedCharacters.find((characterEl) => characterEl.dataset.characterKey === characterKey) || null;
+      }
+
       function createCharacterEntity(position, rotation) {
         const characterEl = document.createElement('a-entity');
         const characterId = ++characterCounter;
         const ringSize = Math.max(currentCharacterWidth * 1.6, 1.1);
+        const shadowRadius = Math.max(currentCharacterWidth * 0.35, 0.28);
 
         characterEl.dataset.characterId = String(characterId);
         characterEl.dataset.label = currentCharacterLabel || `キャラクター${characterId}`;
+        characterEl.dataset.characterKey = currentCharacterKey;
         characterEl.setAttribute('position', cloneVector(position));
         characterEl.setAttribute('rotation', cloneVector(rotation));
         characterEl.setAttribute('scale', '1 1 1');
@@ -298,15 +320,13 @@
           alphaTest: 0.5
         });
 
-        const shadowEl = document.createElement('a-plane');
-        shadowEl.setAttribute('height', fixedCharacterHeight);
-        shadowEl.setAttribute('width', currentCharacterWidth);
-        shadowEl.setAttribute('position', `0 0.01 -${fixedCharacterHeight / 2}`);
+        const shadowEl = document.createElement('a-circle');
+        shadowEl.setAttribute('radius', shadowRadius);
+        shadowEl.setAttribute('position', '0 0.01 0');
         shadowEl.setAttribute('rotation', '-90 0 0');
         shadowEl.setAttribute('material', {
-          src: currentCharacterSrc,
           color: 'black',
-          opacity: 0.4,
+          opacity: 0.22,
           transparent: true,
           shader: 'flat'
         });
@@ -336,6 +356,13 @@
       }
 
       function placeCharacterAt(position, rotation) {
+        const existingCharacter = findPlacedCharacterByKey(currentCharacterKey);
+        if (existingCharacter) {
+          setActiveCharacter(existingCharacter);
+          updateControlStates();
+          return existingCharacter;
+        }
+
         const newCharacter = createCharacterEntity(position, rotation);
         updateControlStates();
         return newCharacter;
@@ -398,6 +425,9 @@
       }
 
       function resetToMainMenu() {
+        clearExitSessionTimeout();
+        isExitingSession = false;
+        exitArButton.disabled = false;
         exitShootingMode();
         isFallbackMode = false;
         suppressNextPlacement = false;
@@ -410,6 +440,43 @@
         addCharacterButton.classList.add('hidden');
         reticle.setAttribute('visible', false);
         clearPlacedCharacters();
+      }
+
+      function finishExitToMainMenu() {
+        if (!isExitingSession && !sessionIsActive()) {
+          return;
+        }
+
+        mainUI.classList.add('ui-exited');
+        resetToMainMenu();
+      }
+
+      function requestExitToMainMenu() {
+        const xrSession = getActiveXrSession();
+        if (!xrSession) {
+          finishExitToMainMenu();
+          return;
+        }
+
+        if (isExitingSession) {
+          return;
+        }
+
+        isExitingSession = true;
+        exitArButton.disabled = true;
+        mainUI.classList.add('ui-exited');
+
+        Promise.resolve(xrSession.end()).catch((error) => {
+          console.error(error);
+          finishExitToMainMenu();
+        });
+
+        clearExitSessionTimeout();
+        exitSessionTimeoutId = window.setTimeout(() => {
+          if (isExitingSession) {
+            finishExitToMainMenu();
+          }
+        }, 1000);
       }
 
       function projectCharacterToScreen(characterEl) {
@@ -487,9 +554,10 @@
         }
       }
 
-      function setCurrentCharacter(source, label) {
+      function setCurrentCharacter(source, label, key = source) {
         currentCharacterSrc = source;
         currentCharacterLabel = label;
+        currentCharacterKey = key || source;
         characterTexture.src = source;
         imagePreview.src = source;
       }
@@ -518,7 +586,7 @@
           return;
         }
 
-        setCurrentCharacter(button.dataset.src, button.textContent.trim());
+        setCurrentCharacter(button.dataset.src, button.textContent.trim(), button.dataset.src);
       });
 
       imageUploadInput.addEventListener('change', (event) => {
@@ -529,7 +597,8 @@
 
         const newUrl = URL.createObjectURL(file);
         createdObjectUrls.add(newUrl);
-        setCurrentCharacter(newUrl, file.name || 'アップロード画像');
+        const uploadKey = `upload:${file.name || 'image'}:${file.size}:${file.lastModified}`;
+        setCurrentCharacter(newUrl, file.name || 'アップロード画像', uploadKey);
       });
 
       arButton.addEventListener('click', () => {
@@ -624,22 +693,11 @@
       });
 
       exitArButton.addEventListener('click', () => {
-        mainUI.classList.add('ui-exited');
-        const xrSession = sceneEl.renderer && sceneEl.renderer.xr && sceneEl.renderer.xr.getSession
-          ? sceneEl.renderer.xr.getSession()
-          : null;
-
-        if (xrSession) {
-          sceneEl.exitAR();
-          return;
-        }
-
-        resetToMainMenu();
+        requestExitToMainMenu();
       });
 
       sceneEl.addEventListener('exit-vr', () => {
-        mainUI.classList.add('ui-exited');
-        resetToMainMenu();
+        finishExitToMainMenu();
       });
 
       window.addEventListener('pointerup', (event) => {
