@@ -17,6 +17,8 @@ import {
   removeActiveCharacter,
 } from './characters.js';
 import {
+  enterShootingMode,
+  exitShootingMode,
   requestExitToMainMenu,
   finishExitToMainMenu,
   startARSession,
@@ -98,6 +100,10 @@ dom.sceneEl.addEventListener('ar-hit-test-lost', () => {
 
 dom.sceneEl.addEventListener('ar-hit-test-select', () => {
   if (state.suppressNextPlacement) { state.suppressNextPlacement = false; return; }
+  if (state.isShootingMode) {
+    exitShootingMode();
+    return;
+  }
   const pos = dom.reticle.getAttribute('position');
   const rot = dom.reticle.getAttribute('rotation');
   if (!pos) return;
@@ -120,6 +126,7 @@ dom.scaleDownButton.addEventListener('click', () => {
   state.activeCharacter.setAttribute('scale', `${s.x * 0.8} ${s.y * 0.8} ${s.z * 0.8}`);
 });
 
+dom.shootModeButton.addEventListener('click',   () => enterShootingMode());
 dom.deleteCharacterButton.addEventListener('click', () => removeActiveCharacter());
 dom.addCharacterButton.addEventListener('click', () => addFallbackCharacter());
 dom.exitArButton.addEventListener('click',       () => requestExitToMainMenu());

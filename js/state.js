@@ -8,6 +8,7 @@ export const state = {
   activeCharacter:       null,
   placedCharacters:      [],
   isFallbackMode:        false,
+  isShootingMode:        false,
   isHitTestActive:       false,
   suppressNextPlacement: false,
   isExitingSession:      false,

@@ -27,6 +27,12 @@
       color: white; z-index: 1000;
       pointer-events: none;
     }
+    /* Hide all children in shooting mode */
+    #main-ui.shooting-mode > * {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none !important;
+    }
 
     /* ── Top bar ── */
     #top-bar {
@@ -167,6 +173,7 @@
       <button id="scale-down-button" class="u-button" disabled>小さく</button>
       <button id="scale-up-button" class="u-button" disabled>大きく</button>
       <button id="delete-character-button" class="u-button" disabled style="background-color:#e74c3c;">削除</button>
+      <button id="shoot-mode-button" class="u-button" disabled>撮影モード</button>
     </div>
 
     <!-- ── Character selection panel ── -->

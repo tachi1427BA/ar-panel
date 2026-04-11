@@ -12,6 +12,7 @@ export const dom = {
   scaleDownButton:    document.getElementById('scale-down-button'),
   scaleUpButton:      document.getElementById('scale-up-button'),
   deleteCharacterButton: document.getElementById('delete-character-button'),
+  shootModeButton:    document.getElementById('shoot-mode-button'),
   charPanel:          document.getElementById('char-panel'),
   charPanelHandle:    document.getElementById('char-panel-handle'),
   charPanelLabel:     document.getElementById('char-panel-label'),
