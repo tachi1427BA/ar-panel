@@ -72,11 +72,14 @@ export function buildCharacterEntity(position, rotation) {
     if (!el.parentNode) return;
     tex.colorSpace = THREE.SRGBColorSpace;
     const geometry = new THREE.PlaneGeometry(charWidth, CHAR_HEIGHT);
+    // In non-WebXR environments show shadow as red to verify positioning
+    const shadowColor = navigator.xr ? 0x000000 : 0xff0000;
+    const shadowOpacity = navigator.xr ? 0.45 : 0.7;
     const material = new THREE.MeshBasicMaterial({
       map: tex,
-      color: 0x000000,
+      color: shadowColor,
       transparent: true,
-      opacity: 0.45,
+      opacity: shadowOpacity,
       alphaTest: 0.5,
       depthWrite: false,
       side: THREE.DoubleSide,
