@@ -225,7 +225,6 @@
     renderer="colorManagement: true;"
   >
     <a-assets>
-      <img id="circle-texture" src="circle.png" crossorigin="anonymous">
     </a-assets>
     <a-camera></a-camera>
 
@@ -344,12 +343,12 @@
 
       // ── Active character ──
       function setActiveCharacter(el) {
-        if (activeCharacter && activeCharacter.__selectionRing) {
-          activeCharacter.__selectionRing.setAttribute('visible', false);
+        if (activeCharacter && activeCharacter.__outline) {
+          activeCharacter.__outline.setAttribute('visible', false);
         }
         activeCharacter = el || null;
-        if (activeCharacter && activeCharacter.__selectionRing) {
-          activeCharacter.__selectionRing.setAttribute('visible', true);
+        if (activeCharacter && activeCharacter.__outline) {
+          activeCharacter.__outline.setAttribute('visible', true);
         }
         updateSelectionStatus();
         updateControlStates();
@@ -384,18 +383,13 @@
         return el;
       }
 
-      function buildSelectionRingElement() {
-        const radius = Math.max(currentCharacterWidth * 0.8, 0.55);
-        const el = document.createElement('a-entity');
-        el.setAttribute('position', '0 0.02 0');
-        el.setAttribute('rotation', '-90 0 0');
+      function buildOutlineElement() {
+        const el = document.createElement('a-plane');
+        el.setAttribute('height', CHAR_HEIGHT + 0.06);
+        el.setAttribute('width', currentCharacterWidth + 0.06);
+        el.setAttribute('position', `0 ${CHAR_HEIGHT / 2} -0.002`);
+        el.setAttribute('material', 'color: #ffffff; shader: flat');
         el.setAttribute('visible', false);
-        el.setAttribute('geometry', `primitive: circle; radius: ${radius}; segments: 32`);
-        el.setAttribute('material', 'color: #ffffff; opacity: 0.65; transparent: true; shader: flat; depthWrite: false');
-        el.addEventListener('loaded', () => {
-          const mesh = el.getObject3D('mesh');
-          if (mesh && mesh.material) { mesh.material.map = null; mesh.material.needsUpdate = true; }
-        });
         return el;
       }
 
@@ -410,14 +404,14 @@
         el.setAttribute('rotation', { x: 0, y: (rotation && rotation.y) || 0, z: 0 });
         el.setAttribute('scale', '1 1 1');
 
-        const body   = buildBodyElement();
-        const shadow = buildShadowElement();
-        const ring   = buildSelectionRingElement();
+        const body    = buildBodyElement();
+        const shadow  = buildShadowElement();
+        const outline = buildOutlineElement();
 
+        el.appendChild(outline);
         el.appendChild(body);
         el.appendChild(shadow);
-        el.appendChild(ring);
-        el.__selectionRing = ring;
+        el.__outline = outline;
 
         charactersContainer.appendChild(el);
         placedCharacters.push(el);
