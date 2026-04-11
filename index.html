@@ -239,6 +239,20 @@
     <a-entity id="characters-container"></a-entity>
   </a-scene>
 
+  <script>
+    // Detect if ES module loading fails (e.g., file:// protocol)
+    window.__modulesLoaded = false;
+    window.addEventListener('DOMContentLoaded', () => {
+      setTimeout(() => {
+        if (!window.__modulesLoaded) {
+          const overlay = document.getElementById('start-overlay');
+          if (overlay) {
+            overlay.innerHTML = '<div style="color:#f88;font-size:14px;padding:16px;text-align:center;">ロード失敗: ローカルHTTPサーバーが必要です。<br><code style="font-size:12px;">npx serve .</code> または <code style="font-size:12px;">python3 -m http.server 8080</code> を実行してください。</div>';
+          }
+        }
+      }, 2000);
+    });
+  </script>
   <script type="module" src="js/main.js"></script>
 </body>
 </html>

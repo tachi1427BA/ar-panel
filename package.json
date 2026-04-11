@@ -1,0 +1,8 @@
+{
+  "name": "ar-panel",
+  "private": true,
+  "scripts": {
+    "start": "npx serve . --listen 8080 --no-clipboard",
+    "dev": "npx serve . --listen 8080"
+  }
+}

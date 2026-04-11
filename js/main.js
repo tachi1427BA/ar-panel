@@ -1,3 +1,6 @@
+// Signal that modules loaded successfully
+window.__modulesLoaded = true;
+
 import { state }                from './state.js';
 import { dom }                  from './dom.js';
 import {
