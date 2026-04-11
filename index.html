@@ -7,147 +7,189 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <style>
-    body { margin: 0; font-family: sans-serif; }
-    .overlay-ui {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      display: flex; justify-content: center; align-items: center; flex-direction: column;
-      color: white; z-index: 1000;
-      pointer-events: auto;
-    }
-    .overlay-ui::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background-color: rgba(0, 0, 0, 0.8);
-      z-index: -1;
-      transition: background-color 0.3s ease;
-    }
-    .overlay-ui.ar-mode {
-      pointer-events: none;
-    }
-    .overlay-ui.ar-mode::before,
-    .overlay-ui.shooting-mode::before {
-      background-color: transparent;
-    }
-    .overlay-ui.ui-exited::before {
-      background-color: #333;
-    }
-    .overlay-ui.shooting-mode {
-      pointer-events: none;
-    }
-    .overlay-ui.shooting-mode > * {
-      opacity: 0;
-      visibility: hidden;
-    }
+    body { margin: 0; font-family: sans-serif; background: #111; }
+
+    /* ── Utility ── */
     .hidden { display: none !important; }
     .u-button {
-      display: inline-block;
+      display: inline-flex; align-items: center; justify-content: center;
       background-color: #3498db; color: white;
-      padding: 6px 20px; font-size: 16px;
-      border: none; border-radius: 8px; cursor: pointer; margin: 5px;
+      padding: 6px 14px; font-size: 15px;
+      border: none; border-radius: 8px; cursor: pointer; margin: 3px;
+      pointer-events: auto; white-space: nowrap;
+    }
+    .u-button:disabled { background-color: #666; cursor: not-allowed; }
+
+    /* ── Main overlay (dom-overlay root) ── */
+    #main-ui {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      color: white; z-index: 1000;
+      pointer-events: none;
+    }
+    #main-ui.shooting-mode > * {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none !important;
+    }
+
+    /* ── Top bar ── */
+    #top-bar {
+      position: fixed; top: 0; left: 0; right: 0; height: 54px;
+      background: rgba(0, 0, 0, 0.65);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 12px;
       pointer-events: auto;
     }
-    .u-button:disabled { background-color: #888; cursor: not-allowed; }
-    #upload-container { text-align: center; }
-    #image-preview {
-      display: block;
-      width: 300px; height: 300px; object-fit: contain;
-      margin: 10px auto;
-      border: 2px solid #fff;
+    #app-title { font-size: 16px; font-weight: bold; }
+
+    /* ── Instructions ── */
+    #instructions {
+      position: fixed; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 16px; text-align: center; white-space: nowrap;
+      text-shadow: 0 0 6px black;
+      background: rgba(0, 0, 0, 0.5); padding: 8px 18px; border-radius: 10px;
+      pointer-events: none;
     }
+
+    /* ── Edit controls (top, below top-bar) ── */
     #edit-controls {
-      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      position: fixed; top: 62px; left: 50%; transform: translateX(-50%);
       display: flex; flex-wrap: wrap; justify-content: center; align-items: center;
+      gap: 2px;
       width: min(720px, calc(100% - 24px));
       pointer-events: none;
     }
-    #edit-controls .u-button,
+    #edit-controls .u-button { pointer-events: auto; }
     #selection-status {
+      width: 100%; text-align: center; font-size: 13px;
+      text-shadow: 0 0 4px black; margin-bottom: 2px;
+    }
+
+    /* ── Character panel (slide-up from bottom) ── */
+    #char-panel {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: rgba(15, 15, 22, 0.92);
+      border-radius: 16px 16px 0 0;
+      border-top: 1px solid rgba(255, 255, 255, 0.12);
+      transform: translateY(calc(100% - 60px));
+      transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
       pointer-events: auto;
+      max-height: 70vh;
+      display: flex; flex-direction: column;
     }
-    #selection-status {
-      width: 100%;
-      text-align: center;
-      font-size: 14px;
-      margin-bottom: 6px;
-      text-shadow: 0 0 4px black;
+    #char-panel.expanded { transform: translateY(0); }
+
+    #char-panel-handle {
+      height: 60px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      gap: 8px; cursor: pointer; user-select: none;
     }
+    #char-handle-preview {
+      height: 38px; width: auto; border-radius: 4px;
+      object-fit: contain; pointer-events: none;
+    }
+    .handle-bar {
+      width: 32px; height: 4px;
+      background: rgba(255, 255, 255, 0.35); border-radius: 2px;
+    }
+    #char-panel-label {
+      font-size: 13px; color: rgba(255, 255, 255, 0.75);
+      min-width: 80px; text-align: center;
+    }
+
+    #char-panel-body {
+      overflow-y: auto; padding: 4px 10px 16px;
+      flex: 1; min-height: 0;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    #char-panel-body::-webkit-scrollbar { width: 5px; }
+    #char-panel-body::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
+
+    #char-panel-top-row {
+      display: flex; align-items: center; gap: 12px;
+    }
+    #image-preview {
+      width: 56px; height: 72px; object-fit: contain;
+      border: 1.5px solid rgba(255, 255, 255, 0.3); border-radius: 6px;
+      background: rgba(255, 255, 255, 0.05); flex-shrink: 0;
+    }
+
     #preset-selector {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 4px;
-      margin-top: 10px;
-      padding: 10px;
-      max-height: 220px;
-      overflow-y: auto;
-      border-top: 1px solid #555;
-      border-bottom: 1px solid #555;
-      background-color: rgba(0, 0, 0, 0.2);
-      cursor: grab;
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 4px; cursor: grab;
     }
-    #preset-selector::-webkit-scrollbar {
-      width: 8px;
-    }
-    #preset-selector::-webkit-scrollbar-thumb {
-      background: #555;
-      border-radius: 4px;
-    }
-    #instructions {
-      position: absolute;
-      bottom: 33vh;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 100%;
-      text-align: center;
-      font-size: 18px;
-      text-shadow: 0 0 4px black;
-    }
+    .preset-button { padding: 6px 2px; font-size: 13px; }
+    .preset-button.active-preset { background-color: #2ecc71; color: #000; }
   </style>
 </head>
 <body>
-  <div id="main-ui" class="overlay-ui">
-    <div id="upload-container">
-      <h3>キャラクターを選択またはアップロード</h3>
-      <input type="file" id="image-upload-input" accept="image/png, image/jpeg" style="display: none;">
-      <label for="image-upload-input" class="u-button">ファイルを選択</label>
+  <div id="main-ui">
 
-      <div id="preset-selector">
-        <button class="u-button preset-button" data-src="シロコ.png">シロコ</button>
-        <button class="u-button preset-button" data-src="ホシノ.png">ホシノ</button>
-        <button class="u-button preset-button" data-src="ノノミ.png">ノノミ</button>
-        <button class="u-button preset-button" data-src="セリカ.png">セリカ</button>
-        <button class="u-button preset-button" data-src="アヤネ.png">アヤネ</button>
-        <button class="u-button preset-button" data-src="アル.png">アル</button>
-        <button class="u-button preset-button" data-src="kayoko.png">カヨコ</button>
-        <button class="u-button preset-button" data-src="ムツキ.png">ムツキ</button>
-        <button class="u-button preset-button" data-src="ハルカ.png">ハルカ</button>
-        <button class="u-button preset-button" data-src="アリス.png">アリス</button>
-        <button class="u-button preset-button" data-src="モモイ.png">モモイ</button>
-        <button class="u-button preset-button" data-src="ミドリ.png">ミドリ</button>
-        <button class="u-button preset-button" data-src="ユズ.png">ユズ</button>
-        <button class="u-button preset-button" data-src="ヒフミ.png">ヒフミ</button>
-        <button class="u-button preset-button" data-src="ハナコ.png">ハナコ</button>
-        <button class="u-button preset-button" data-src="アズサ.png">アズサ</button>
-        <button class="u-button preset-button" data-src="コハル.png">コハル</button>
-        <button class="u-button preset-button" data-src="ユウカ.png">ユウカ</button>
-        <button class="u-button preset-button" data-src="ノア.png">ノア</button>
-        <button class="u-button preset-button" data-src="コユキ.png">コユキ</button>
-        <button class="u-button preset-button" data-src="リオ.png">リオ</button>
+    <!-- ── Top bar ── -->
+    <div id="top-bar">
+      <span id="app-title">AR立ち絵 Viewer</span>
+      <div>
+        <button id="ar-button" class="u-button">ARを開始</button>
+        <button id="exit-ar-button" class="u-button hidden">戻る</button>
       </div>
-
-      <img id="image-preview">
     </div>
-    <button id="ar-button" class="u-button">ARを開始</button>
-    <div id="instructions" style="display: none;">平面にカメラを向けてください</div>
+
+    <!-- ── Center instructions ── -->
+    <div id="instructions" style="display: none;"></div>
+
+    <!-- ── Edit controls (shown during session) ── -->
     <div id="edit-controls" style="display: none;">
       <div id="selection-status">キャラクター未選択</div>
       <button id="add-character-button" class="u-button hidden">キャラを追加</button>
       <button id="scale-down-button" class="u-button" disabled>小さく</button>
       <button id="scale-up-button" class="u-button" disabled>大きく</button>
       <button id="shoot-mode-button" class="u-button" disabled>撮影モード</button>
-      <button id="exit-ar-button" class="u-button">戻る</button>
     </div>
-  </div>
+
+    <!-- ── Character selection panel ── -->
+    <div id="char-panel" class="expanded">
+      <div id="char-panel-handle">
+        <div class="handle-bar"></div>
+        <img id="char-handle-preview" src="シロコ.png">
+        <span id="char-panel-label">シロコ</span>
+        <div class="handle-bar"></div>
+      </div>
+      <div id="char-panel-body">
+        <div id="char-panel-top-row">
+          <img id="image-preview" src="シロコ.png">
+          <div style="display:flex; flex-direction:column; gap:4px;">
+            <input type="file" id="image-upload-input" accept="image/png, image/jpeg" style="display:none;">
+            <label for="image-upload-input" class="u-button" style="font-size:13px;">ファイルを選択</label>
+          </div>
+        </div>
+        <div id="preset-selector">
+          <button class="u-button preset-button active-preset" data-src="シロコ.png">シロコ</button>
+          <button class="u-button preset-button" data-src="ホシノ.png">ホシノ</button>
+          <button class="u-button preset-button" data-src="ノノミ.png">ノノミ</button>
+          <button class="u-button preset-button" data-src="セリカ.png">セリカ</button>
+          <button class="u-button preset-button" data-src="アヤネ.png">アヤネ</button>
+          <button class="u-button preset-button" data-src="アル.png">アル</button>
+          <button class="u-button preset-button" data-src="kayoko.png">カヨコ</button>
+          <button class="u-button preset-button" data-src="ムツキ.png">ムツキ</button>
+          <button class="u-button preset-button" data-src="ハルカ.png">ハルカ</button>
+          <button class="u-button preset-button" data-src="アリス.png">アリス</button>
+          <button class="u-button preset-button" data-src="モモイ.png">モモイ</button>
+          <button class="u-button preset-button" data-src="ミドリ.png">ミドリ</button>
+          <button class="u-button preset-button" data-src="ユズ.png">ユズ</button>
+          <button class="u-button preset-button" data-src="ヒフミ.png">ヒフミ</button>
+          <button class="u-button preset-button" data-src="ハナコ.png">ハナコ</button>
+          <button class="u-button preset-button" data-src="アズサ.png">アズサ</button>
+          <button class="u-button preset-button" data-src="コハル.png">コハル</button>
+          <button class="u-button preset-button" data-src="ユウカ.png">ユウカ</button>
+          <button class="u-button preset-button" data-src="ノア.png">ノア</button>
+          <button class="u-button preset-button" data-src="コユキ.png">コユキ</button>
+          <button class="u-button preset-button" data-src="リオ.png">リオ</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- #main-ui -->
 
   <a-scene
     id="scene"
@@ -175,73 +217,83 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      const sceneEl = document.querySelector('a-scene');
-      const mainUI = document.getElementById('main-ui');
-      const uploadContainer = document.getElementById('upload-container');
-      const imageUploadInput = document.getElementById('image-upload-input');
-      const imagePreview = document.getElementById('image-preview');
-      const arButton = document.getElementById('ar-button');
-      const instructionsEl = document.getElementById('instructions');
-      const editControls = document.getElementById('edit-controls');
-      const selectionStatus = document.getElementById('selection-status');
+
+      // ── DOM refs ──
+      const sceneEl            = document.querySelector('a-scene');
+      const mainUI             = document.getElementById('main-ui');
+      const arButton           = document.getElementById('ar-button');
+      const exitArButton       = document.getElementById('exit-ar-button');
+      const instructionsEl     = document.getElementById('instructions');
+      const editControls       = document.getElementById('edit-controls');
+      const selectionStatus    = document.getElementById('selection-status');
       const addCharacterButton = document.getElementById('add-character-button');
-      const scaleDownButton = document.getElementById('scale-down-button');
-      const scaleUpButton = document.getElementById('scale-up-button');
-      const shootModeButton = document.getElementById('shoot-mode-button');
-      const exitArButton = document.getElementById('exit-ar-button');
-      const characterTexture = document.getElementById('character-texture');
-      const reticle = document.getElementById('reticle');
+      const scaleDownButton    = document.getElementById('scale-down-button');
+      const scaleUpButton      = document.getElementById('scale-up-button');
+      const shootModeButton    = document.getElementById('shoot-mode-button');
+      const charPanel          = document.getElementById('char-panel');
+      const charPanelHandle    = document.getElementById('char-panel-handle');
+      const charPanelLabel     = document.getElementById('char-panel-label');
+      const charHandlePreview  = document.getElementById('char-handle-preview');
+      const imagePreview       = document.getElementById('image-preview');
+      const imageUploadInput   = document.getElementById('image-upload-input');
+      const presetSelector     = document.getElementById('preset-selector');
+      const charPanelBody      = document.getElementById('char-panel-body');
+      const reticle            = document.getElementById('reticle');
       const charactersContainer = document.getElementById('characters-container');
 
-      const fixedCharacterHeight = 1.7;
-      let currentCharacterSrc = characterTexture.getAttribute('src') || characterTexture.src;
+      // ── Constants ──
+      const CHAR_HEIGHT = 1.7;
+
+      // ── State ──
+      let currentCharacterSrc   = 'シロコ.png';
       let currentCharacterWidth = 0.85;
       let currentCharacterLabel = 'シロコ';
-      let currentCharacterKey = currentCharacterSrc;
-      let activeCharacter = null;
-      let placedCharacters = [];
-      let isFallbackMode = false;
-      let isShootingMode = false;
+      let currentCharacterKey   = 'シロコ.png';
+      let activeCharacter       = null;
+      let placedCharacters      = [];
+      let isFallbackMode        = false;
+      let isShootingMode        = false;
       let suppressNextPlacement = false;
-      let isExitingSession = false;
-      let exitSessionTimeoutId = null;
-      let characterCounter = 0;
-      const createdObjectUrls = new Set();
+      let isExitingSession      = false;
+      let exitSessionTimeoutId  = null;
+      let characterCounter      = 0;
+      const createdObjectUrls   = new Set();
+
+      // ── Utility ──
+      function cloneVector(v) { return { x: v.x, y: v.y, z: v.z }; }
 
       function suppressPlacementTemporarily() {
         suppressNextPlacement = true;
-        window.setTimeout(() => {
-          suppressNextPlacement = false;
-        }, 250);
+        setTimeout(() => { suppressNextPlacement = false; }, 250);
       }
 
-      function cloneVector(vector) {
-        return { x: vector.x, y: vector.y, z: vector.z };
-      }
-
-      function clearExitSessionTimeout() {
+      function clearExitTimeout() {
         if (exitSessionTimeoutId !== null) {
-          window.clearTimeout(exitSessionTimeoutId);
+          clearTimeout(exitSessionTimeoutId);
           exitSessionTimeoutId = null;
         }
       }
 
       function getActiveXrSession() {
-        return sceneEl.renderer && sceneEl.renderer.xr && sceneEl.renderer.xr.getSession
-          ? sceneEl.renderer.xr.getSession()
-          : null;
+        try { return sceneEl.renderer.xr.getSession(); } catch (_) { return null; }
       }
 
       function sessionIsActive() {
         return editControls.style.display !== 'none';
       }
 
+      // ── Panel ──
+      charPanelHandle.addEventListener('click', () => {
+        charPanel.classList.toggle('expanded');
+      });
+      function collapsePanel() { charPanel.classList.remove('expanded'); }
+      function expandPanel()   { charPanel.classList.add('expanded'); }
+
+      // ── Control states ──
       function updateControlStates() {
-        const hasActiveCharacter = Boolean(activeCharacter);
-        const hasPlacedCharacter = placedCharacters.length > 0;
-        scaleDownButton.disabled = !hasActiveCharacter;
-        scaleUpButton.disabled = !hasActiveCharacter;
-        shootModeButton.disabled = !hasPlacedCharacter;
+        scaleDownButton.disabled = !activeCharacter;
+        scaleUpButton.disabled   = !activeCharacter;
+        shootModeButton.disabled = placedCharacters.length === 0;
       }
 
       function updateSelectionStatus() {
@@ -255,381 +307,330 @@
           instructionsEl.style.display = 'none';
           return;
         }
-
         if (isFallbackMode) {
-          instructionsEl.textContent = '3Dビュー: 「キャラを追加」で配置 / キャラをタップで選択';
-          instructionsEl.style.display = 'block';
-          return;
-        }
-
-        if (reticle.getAttribute('visible')) {
-          instructionsEl.textContent = '平面をタップで配置 / キャラをタップで選択';
+          instructionsEl.textContent = '「キャラを追加」で配置 / キャラをタップで選択';
         } else {
-          instructionsEl.textContent = '平面にカメラを向けてください';
+          instructionsEl.textContent = reticle.getAttribute('visible')
+            ? '平面をタップで配置 / キャラをタップで選択'
+            : '平面にカメラを向けてください';
         }
         instructionsEl.style.display = 'block';
       }
 
-      function setActiveCharacter(characterEl) {
+      // ── Active character ──
+      function setActiveCharacter(el) {
         if (activeCharacter && activeCharacter.__selectionRing) {
           activeCharacter.__selectionRing.setAttribute('visible', false);
         }
-
-        activeCharacter = characterEl || null;
-
+        activeCharacter = el || null;
         if (activeCharacter && activeCharacter.__selectionRing) {
           activeCharacter.__selectionRing.setAttribute('visible', true);
         }
-
         updateSelectionStatus();
         updateControlStates();
       }
 
-      function clearPlacedCharacters() {
-        placedCharacters.forEach((characterEl) => characterEl.remove());
-        placedCharacters = [];
-        setActiveCharacter(null);
-        updateControlStates();
-      }
-
-      function findPlacedCharacterByKey(characterKey) {
-        return placedCharacters.find((characterEl) => characterEl.dataset.characterKey === characterKey) || null;
-      }
-
-      function createCharacterEntity(position, rotation) {
-        const characterEl = document.createElement('a-entity');
-        const characterId = ++characterCounter;
-        const ringSize = Math.max(currentCharacterWidth * 1.6, 1.1);
-        const shadowRadius = Math.max(currentCharacterWidth * 0.35, 0.28);
-
-        characterEl.dataset.characterId = String(characterId);
-        characterEl.dataset.label = currentCharacterLabel || `キャラクター${characterId}`;
-        characterEl.dataset.characterKey = currentCharacterKey;
-        characterEl.setAttribute('position', cloneVector(position));
-        characterEl.setAttribute('rotation', cloneVector(rotation));
-        characterEl.setAttribute('scale', '1 1 1');
-
-        const bodyEl = document.createElement('a-plane');
-        bodyEl.setAttribute('height', fixedCharacterHeight);
-        bodyEl.setAttribute('width', currentCharacterWidth);
-        bodyEl.setAttribute('position', `0 ${fixedCharacterHeight / 2} 0`);
-        bodyEl.setAttribute('material', {
+      // ── Character entity construction ──
+      function buildBodyElement() {
+        const el = document.createElement('a-plane');
+        el.setAttribute('height', CHAR_HEIGHT);
+        el.setAttribute('width', currentCharacterWidth);
+        el.setAttribute('position', `0 ${CHAR_HEIGHT / 2} 0`);
+        el.setAttribute('material', {
           src: currentCharacterSrc,
           shader: 'flat',
           transparent: true,
-          alphaTest: 0.5
+          alphaTest: 0.5,
         });
+        return el;
+      }
 
-        const shadowEl = document.createElement('a-circle');
-        shadowEl.setAttribute('radius', shadowRadius);
-        shadowEl.setAttribute('position', '0 0.01 0');
-        shadowEl.setAttribute('rotation', '-90 0 0');
-        shadowEl.setAttribute('material', {
-          color: 'black',
-          opacity: 0.22,
+      function buildShadowElement() {
+        const size = Math.max(currentCharacterWidth * 0.7, 0.56);
+        const el = document.createElement('a-plane');
+        el.setAttribute('height', size);
+        el.setAttribute('width', size);
+        el.setAttribute('position', '0 0.005 0');
+        el.setAttribute('rotation', '-90 0 0');
+        el.setAttribute('material', {
+          src: '#circle-texture',
+          color: '#000',
+          opacity: 0.28,
           transparent: true,
-          shader: 'flat'
+          shader: 'flat',
+          depthWrite: false,
         });
+        return el;
+      }
 
-        const selectionRingEl = document.createElement('a-plane');
-        selectionRingEl.setAttribute('height', ringSize);
-        selectionRingEl.setAttribute('width', ringSize);
-        selectionRingEl.setAttribute('position', '0 0.02 0');
-        selectionRingEl.setAttribute('rotation', '-90 0 0');
-        selectionRingEl.setAttribute('visible', 'false');
-        selectionRingEl.setAttribute('material', {
+      function buildSelectionRingElement() {
+        const size = Math.max(currentCharacterWidth * 1.6, 1.1);
+        const el = document.createElement('a-plane');
+        el.setAttribute('height', size);
+        el.setAttribute('width', size);
+        el.setAttribute('position', '0 0.02 0');
+        el.setAttribute('rotation', '-90 0 0');
+        el.setAttribute('visible', false);
+        el.setAttribute('material', {
           src: '#circle-texture',
           transparent: true,
           opacity: 0.65,
-          shader: 'flat'
+          shader: 'flat',
+          depthWrite: false,
         });
-
-        characterEl.appendChild(bodyEl);
-        characterEl.appendChild(shadowEl);
-        characterEl.appendChild(selectionRingEl);
-        characterEl.__selectionRing = selectionRingEl;
-
-        charactersContainer.appendChild(characterEl);
-        placedCharacters.push(characterEl);
-        setActiveCharacter(characterEl);
-        return characterEl;
+        return el;
       }
 
-      function placeCharacterAt(position, rotation) {
-        const existingCharacter = findPlacedCharacterByKey(currentCharacterKey);
-        if (existingCharacter) {
-          setActiveCharacter(existingCharacter);
-          updateControlStates();
-          return existingCharacter;
-        }
+      function createCharacterEntity(position, rotation) {
+        const el = document.createElement('a-entity');
+        el.dataset.characterId  = String(++characterCounter);
+        el.dataset.label        = currentCharacterLabel || `キャラクター${characterCounter}`;
+        el.dataset.characterKey = currentCharacterKey;
+        el.setAttribute('position', cloneVector(position));
+        // Use only Y rotation — reticle sends X=-90 (flat on floor) which would
+        // lay the character plane down and show the image at ground level.
+        el.setAttribute('rotation', { x: 0, y: (rotation && rotation.y) || 0, z: 0 });
+        el.setAttribute('scale', '1 1 1');
 
-        const newCharacter = createCharacterEntity(position, rotation);
-        updateControlStates();
-        return newCharacter;
+        const body   = buildBodyElement();
+        const shadow = buildShadowElement();
+        const ring   = buildSelectionRingElement();
+
+        el.appendChild(body);
+        el.appendChild(shadow);
+        el.appendChild(ring);
+        el.__selectionRing = ring;
+
+        charactersContainer.appendChild(el);
+        placedCharacters.push(el);
+        setActiveCharacter(el);
+        return el;
+      }
+
+      function clearPlacedCharacters() {
+        placedCharacters.forEach(el => el.remove());
+        placedCharacters = [];
+        setActiveCharacter(null);
+      }
+
+      function findPlacedCharacterByKey(key) {
+        return placedCharacters.find(el => el.dataset.characterKey === key) || null;
+      }
+
+      // ── Placement ──
+      function placeCharacterAt(position, rotation) {
+        const existing = findPlacedCharacterByKey(currentCharacterKey);
+        if (existing) {
+          setActiveCharacter(existing);
+          return existing;
+        }
+        return createCharacterEntity(position, rotation);
       }
 
       function fallbackPlacementPosition(index) {
-        if (index === 0) {
-          return { x: 0, y: -0.5, z: -2 };
-        }
-
+        if (index === 0) return { x: 0, y: -0.5, z: -2 };
         const spread = Math.ceil(index / 2);
-        const direction = index % 2 === 1 ? 1 : -1;
-        return {
-          x: direction * spread * 0.55,
-          y: -0.5,
-          z: -2 - (spread - 1) * 0.2
-        };
+        const dir    = index % 2 === 1 ? 1 : -1;
+        return { x: dir * spread * 0.55, y: -0.5, z: -2 - (spread - 1) * 0.2 };
       }
 
       function addFallbackCharacter() {
-        const placement = fallbackPlacementPosition(placedCharacters.length);
-        placeCharacterAt(placement, { x: 0, y: 0, z: 0 });
+        placeCharacterAt(
+          fallbackPlacementPosition(placedCharacters.length),
+          { x: 0, y: 0, z: 0 }
+        );
       }
 
+      // ── Shooting mode ──
       function enterShootingMode() {
-        if (!placedCharacters.length) {
-          return;
-        }
-
+        if (!placedCharacters.length) return;
         isShootingMode = true;
         mainUI.classList.add('shooting-mode');
-        instructionsEl.style.display = 'none';
+        updateInstructions();
       }
 
       function exitShootingMode() {
-        if (!isShootingMode) {
-          return;
-        }
-
+        if (!isShootingMode) return;
         isShootingMode = false;
         mainUI.classList.remove('shooting-mode');
         updateInstructions();
       }
 
+      // ── Session mode ──
       function enterFallbackMode(message) {
         alert(message);
         isFallbackMode = true;
-        mainUI.classList.add('ar-mode');
-        uploadContainer.classList.add('hidden');
         arButton.classList.add('hidden');
+        exitArButton.classList.remove('hidden');
         editControls.style.display = 'flex';
         addCharacterButton.classList.remove('hidden');
-
-        if (!placedCharacters.length) {
-          addFallbackCharacter();
-        }
-
+        collapsePanel();
+        if (!placedCharacters.length) addFallbackCharacter();
         updateInstructions();
         updateControlStates();
       }
 
       function resetToMainMenu() {
-        clearExitSessionTimeout();
-        isExitingSession = false;
+        clearExitTimeout();
+        isExitingSession      = false;
         exitArButton.disabled = false;
         exitShootingMode();
-        isFallbackMode = false;
+        isFallbackMode        = false;
         suppressNextPlacement = false;
-        mainUI.classList.remove('ar-mode');
-        mainUI.classList.remove('shooting-mode');
-        uploadContainer.classList.remove('hidden');
         arButton.classList.remove('hidden');
+        exitArButton.classList.add('hidden');
         instructionsEl.style.display = 'none';
-        editControls.style.display = 'none';
+        editControls.style.display   = 'none';
         addCharacterButton.classList.add('hidden');
         reticle.setAttribute('visible', false);
         clearPlacedCharacters();
+        expandPanel();
       }
 
       function finishExitToMainMenu() {
-        if (!isExitingSession && !sessionIsActive()) {
-          return;
-        }
-
-        mainUI.classList.add('ui-exited');
+        if (!isExitingSession && !sessionIsActive()) return;
         resetToMainMenu();
       }
 
       function requestExitToMainMenu() {
         const xrSession = getActiveXrSession();
-        if (!xrSession) {
-          finishExitToMainMenu();
-          return;
-        }
+        if (!xrSession) { finishExitToMainMenu(); return; }
+        if (isExitingSession) return;
 
-        if (isExitingSession) {
-          return;
-        }
-
-        isExitingSession = true;
+        isExitingSession      = true;
         exitArButton.disabled = true;
-        mainUI.classList.add('ui-exited');
 
-        Promise.resolve(xrSession.end()).catch((error) => {
-          console.error(error);
+        Promise.resolve(xrSession.end()).catch(err => {
+          console.error(err);
           finishExitToMainMenu();
         });
 
-        clearExitSessionTimeout();
-        exitSessionTimeoutId = window.setTimeout(() => {
-          if (isExitingSession) {
-            finishExitToMainMenu();
-          }
+        clearExitTimeout();
+        exitSessionTimeoutId = setTimeout(() => {
+          if (isExitingSession) finishExitToMainMenu();
         }, 1000);
       }
 
-      function projectCharacterToScreen(characterEl) {
-        if (!sceneEl.camera) {
-          return null;
-        }
+      // ── Screen projection / tap detection ──
+      function projectCharacterToScreen(el) {
+        if (!sceneEl.camera) return null;
+        const cam     = sceneEl.camera;
+        const centerW = el.object3D.localToWorld(new THREE.Vector3(0, CHAR_HEIGHT / 2, 0));
+        const topW    = el.object3D.localToWorld(new THREE.Vector3(0, CHAR_HEIGHT, 0));
+        const botW    = el.object3D.localToWorld(new THREE.Vector3(0, 0, 0));
+        const cProj   = centerW.clone().project(cam);
+        const tProj   = topW.clone().project(cam);
+        const bProj   = botW.clone().project(cam);
 
-        const camera = sceneEl.camera;
-        const centerWorld = characterEl.object3D.localToWorld(new THREE.Vector3(0, fixedCharacterHeight / 2, 0));
-        const bottomWorld = characterEl.object3D.localToWorld(new THREE.Vector3(0, 0, 0));
-        const topWorld = characterEl.object3D.localToWorld(new THREE.Vector3(0, fixedCharacterHeight, 0));
-
-        const centerProjection = centerWorld.clone().project(camera);
-        const topProjection = topWorld.clone().project(camera);
-        const bottomProjection = bottomWorld.clone().project(camera);
-
-        if (centerProjection.z < -1 || centerProjection.z > 1) {
-          return null;
-        }
-
-        const screenCenterX = (centerProjection.x * 0.5 + 0.5) * window.innerWidth;
-        const screenCenterY = (-centerProjection.y * 0.5 + 0.5) * window.innerHeight;
-        const screenTopY = (-topProjection.y * 0.5 + 0.5) * window.innerHeight;
-        const screenBottomY = (-bottomProjection.y * 0.5 + 0.5) * window.innerHeight;
+        if (cProj.z < -1 || cProj.z > 1) return null;
 
         return {
-          x: screenCenterX,
-          y: screenCenterY,
-          height: Math.abs(screenTopY - screenBottomY)
+          x:      (cProj.x  * 0.5 + 0.5) * window.innerWidth,
+          y:      (-cProj.y * 0.5 + 0.5) * window.innerHeight,
+          height: Math.abs(
+            (-tProj.y * 0.5 + 0.5) * window.innerHeight -
+            (-bProj.y * 0.5 + 0.5) * window.innerHeight
+          ),
         };
       }
 
       function findTappedCharacter(clientX, clientY) {
-        if (!sceneEl.camera || !placedCharacters.length) {
-          return null;
-        }
-
+        if (!sceneEl.camera || !placedCharacters.length) return null;
         sceneEl.object3D.updateMatrixWorld(true);
-        let closestMatch = null;
-        let closestDistance = Number.POSITIVE_INFINITY;
-
-        placedCharacters.forEach((characterEl) => {
-          const screenProjection = projectCharacterToScreen(characterEl);
-          if (!screenProjection) {
-            return;
-          }
-
-          const selectionRadius = Math.max(48, screenProjection.height * 0.35);
-          const distance = Math.hypot(screenProjection.x - clientX, screenProjection.y - clientY);
-
-          if (distance <= selectionRadius && distance < closestDistance) {
-            closestDistance = distance;
-            closestMatch = characterEl;
-          }
+        let closest = null, minDist = Infinity;
+        placedCharacters.forEach(el => {
+          const proj = projectCharacterToScreen(el);
+          if (!proj) return;
+          const r    = Math.max(48, proj.height * 0.35);
+          const dist = Math.hypot(proj.x - clientX, proj.y - clientY);
+          if (dist <= r && dist < minDist) { minDist = dist; closest = el; }
         });
-
-        return closestMatch;
+        return closest;
       }
 
       function handleScenePointer(clientX, clientY) {
-        if (!sessionIsActive()) {
-          return;
-        }
-
+        if (!sessionIsActive()) return;
         if (isShootingMode) {
           exitShootingMode();
           suppressPlacementTemporarily();
           return;
         }
-
-        const tappedCharacter = findTappedCharacter(clientX, clientY);
-        if (tappedCharacter) {
-          setActiveCharacter(tappedCharacter);
+        const hit = findTappedCharacter(clientX, clientY);
+        if (hit) {
+          setActiveCharacter(hit);
           suppressPlacementTemporarily();
         }
       }
 
-      function setCurrentCharacter(source, label, key = source) {
-        currentCharacterSrc = source;
+      // ── Current character ──
+      function updatePresetHighlight(key) {
+        document.querySelectorAll('.preset-button').forEach(btn => {
+          btn.classList.toggle('active-preset', btn.dataset.src === key);
+        });
+      }
+
+      function setCurrentCharacter(source, label, key) {
+        const resolvedKey = key || source;
+        currentCharacterSrc   = source;
         currentCharacterLabel = label;
-        currentCharacterKey = key || source;
-        characterTexture.src = source;
-        imagePreview.src = source;
+        currentCharacterKey   = resolvedKey;
+        imagePreview.src      = source;
+        charHandlePreview.src = source;
+        charPanelLabel.textContent = label;
+        updatePresetHighlight(resolvedKey);
       }
 
       function updateCurrentCharacterDimensions() {
-        if (!characterTexture.src || !characterTexture.complete || !characterTexture.naturalHeight) {
-          return;
-        }
-
-        const aspectRatio = characterTexture.naturalWidth / characterTexture.naturalHeight;
-        currentCharacterWidth = fixedCharacterHeight * aspectRatio;
+        if (!imagePreview.src || !imagePreview.complete || !imagePreview.naturalHeight) return;
+        currentCharacterWidth = CHAR_HEIGHT * (imagePreview.naturalWidth / imagePreview.naturalHeight);
       }
 
-      characterTexture.addEventListener('load', updateCurrentCharacterDimensions);
+      imagePreview.addEventListener('load', updateCurrentCharacterDimensions);
+      if (imagePreview.complete) updateCurrentCharacterDimensions();
 
-      if (characterTexture.complete) {
-        updateCurrentCharacterDimensions();
-      }
-
-      imagePreview.src = currentCharacterSrc;
-
-      const presetSelector = document.getElementById('preset-selector');
-      presetSelector.addEventListener('click', (event) => {
-        const button = event.target.closest('.preset-button');
-        if (!button || !button.dataset.src) {
-          return;
-        }
-
-        setCurrentCharacter(button.dataset.src, button.textContent.trim(), button.dataset.src);
+      // ── Preset / upload events ──
+      presetSelector.addEventListener('click', e => {
+        const btn = e.target.closest('.preset-button');
+        if (!btn || !btn.dataset.src) return;
+        setCurrentCharacter(btn.dataset.src, btn.textContent.trim(), btn.dataset.src);
       });
 
-      imageUploadInput.addEventListener('change', (event) => {
-        const file = event.target.files[0];
-        if (!file) {
-          return;
-        }
-
-        const newUrl = URL.createObjectURL(file);
-        createdObjectUrls.add(newUrl);
-        const uploadKey = `upload:${file.name || 'image'}:${file.size}:${file.lastModified}`;
-        setCurrentCharacter(newUrl, file.name || 'アップロード画像', uploadKey);
+      imageUploadInput.addEventListener('change', e => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const url = URL.createObjectURL(file);
+        createdObjectUrls.add(url);
+        const key = `upload:${file.name}:${file.size}:${file.lastModified}`;
+        setCurrentCharacter(url, file.name || 'アップロード画像', key);
       });
 
+      // ── AR button ──
       arButton.addEventListener('click', () => {
-        mainUI.classList.remove('ui-exited');
-
         if (!navigator.xr) {
           enterFallbackMode('お使いのブラウザはWebXRに対応していません。3Dビューで表示します。');
           return;
         }
-
-        navigator.xr.isSessionSupported('immersive-ar').then((supported) => {
+        navigator.xr.isSessionSupported('immersive-ar').then(supported => {
           if (!supported) {
             enterFallbackMode('お使いのブラウザはARに対応していません。3Dビューで表示します。');
             return;
           }
-
           isFallbackMode = false;
-          mainUI.classList.add('ar-mode');
-          uploadContainer.classList.add('hidden');
           arButton.classList.add('hidden');
+          exitArButton.classList.remove('hidden');
           editControls.style.display = 'flex';
           addCharacterButton.classList.add('hidden');
+          collapsePanel();
           updateInstructions();
           updateControlStates();
           sceneEl.enterAR();
-        }).catch((error) => {
-          console.error(error);
+        }).catch(err => {
+          console.error(err);
           enterFallbackMode('ARセッションの確認中にエラーが発生しました。3Dビューで表示します。');
         });
       });
 
+      // ── Scene events ──
       sceneEl.addEventListener('ar-hit-test-achieved', () => {
         if (!isFallbackMode && !isShootingMode) {
           reticle.setAttribute('visible', true);
@@ -650,111 +651,59 @@
           suppressPlacementTemporarily();
           return;
         }
-
-        if (suppressNextPlacement) {
-          suppressNextPlacement = false;
-          return;
-        }
-
-        const reticlePosition = reticle.getAttribute('position');
-        const reticleRotation = reticle.getAttribute('rotation');
-        if (!reticlePosition) {
-          return;
-        }
-
-        placeCharacterAt(reticlePosition, reticleRotation || { x: 0, y: 0, z: 0 });
+        if (suppressNextPlacement) { suppressNextPlacement = false; return; }
+        const pos = reticle.getAttribute('position');
+        const rot = reticle.getAttribute('rotation');
+        if (!pos) return;
+        placeCharacterAt(pos, rot || { x: 0, y: 0, z: 0 });
         updateInstructions();
       });
 
-      scaleUpButton.addEventListener('click', () => {
-        if (!activeCharacter) {
-          return;
-        }
+      sceneEl.addEventListener('exit-vr', () => { finishExitToMainMenu(); });
 
-        const currentScale = activeCharacter.getAttribute('scale');
-        activeCharacter.setAttribute('scale', `${currentScale.x * 1.2} ${currentScale.y * 1.2} ${currentScale.z * 1.2}`);
+      // ── Edit controls ──
+      scaleUpButton.addEventListener('click', () => {
+        if (!activeCharacter) return;
+        const s = activeCharacter.getAttribute('scale');
+        activeCharacter.setAttribute('scale', `${s.x * 1.2} ${s.y * 1.2} ${s.z * 1.2}`);
       });
 
       scaleDownButton.addEventListener('click', () => {
-        if (!activeCharacter) {
-          return;
-        }
-
-        const currentScale = activeCharacter.getAttribute('scale');
-        activeCharacter.setAttribute('scale', `${currentScale.x * 0.8} ${currentScale.y * 0.8} ${currentScale.z * 0.8}`);
+        if (!activeCharacter) return;
+        const s = activeCharacter.getAttribute('scale');
+        activeCharacter.setAttribute('scale', `${s.x * 0.8} ${s.y * 0.8} ${s.z * 0.8}`);
       });
 
-      shootModeButton.addEventListener('click', () => {
-        enterShootingMode();
-      });
+      shootModeButton.addEventListener('click', () => enterShootingMode());
+      addCharacterButton.addEventListener('click', () => addFallbackCharacter());
+      exitArButton.addEventListener('click', () => requestExitToMainMenu());
 
-      addCharacterButton.addEventListener('click', () => {
-        addFallbackCharacter();
-      });
-
-      exitArButton.addEventListener('click', () => {
-        requestExitToMainMenu();
-      });
-
-      sceneEl.addEventListener('exit-vr', () => {
-        finishExitToMainMenu();
-      });
-
-      window.addEventListener('pointerup', (event) => {
-        if (!sessionIsActive()) {
-          return;
-        }
-
-        if (!isShootingMode && mainUI.contains(event.target)) {
-          return;
-        }
-
-        handleScenePointer(event.clientX, event.clientY);
+      // ── Global pointer (scene tap) ──
+      window.addEventListener('pointerup', e => {
+        if (!sessionIsActive()) return;
+        if (!isShootingMode && mainUI.contains(e.target)) return;
+        handleScenePointer(e.clientX, e.clientY);
       }, true);
 
+      // ── Cleanup ──
       window.addEventListener('beforeunload', () => {
-        createdObjectUrls.forEach((url) => URL.revokeObjectURL(url));
+        createdObjectUrls.forEach(url => URL.revokeObjectURL(url));
       });
 
-      const slider = document.getElementById('preset-selector');
-      let isDown = false;
-      let startY;
-      let scrollTop;
-
-      slider.addEventListener('mousedown', (event) => {
-        isDown = true;
-        slider.style.cursor = 'grabbing';
-        startY = event.pageY - slider.offsetTop;
-        scrollTop = slider.scrollTop;
+      // ── Panel body drag-scroll (mouse) ──
+      let drag = { active: false, startY: 0, scrollTop: 0 };
+      charPanelBody.addEventListener('mousedown', e => {
+        drag = { active: true, startY: e.pageY - charPanelBody.offsetTop, scrollTop: charPanelBody.scrollTop };
+        charPanelBody.style.cursor = 'grabbing';
+      });
+      charPanelBody.addEventListener('mouseleave', () => { drag.active = false; charPanelBody.style.cursor = ''; });
+      charPanelBody.addEventListener('mouseup',    () => { drag.active = false; charPanelBody.style.cursor = ''; });
+      charPanelBody.addEventListener('mousemove', e => {
+        if (!drag.active) return;
+        e.preventDefault();
+        charPanelBody.scrollTop = drag.scrollTop - (e.pageY - charPanelBody.offsetTop - drag.startY);
       });
 
-      slider.addEventListener('mouseleave', () => {
-        isDown = false;
-        slider.style.cursor = 'grab';
-      });
-
-      slider.addEventListener('mouseup', () => {
-        isDown = false;
-        slider.style.cursor = 'grab';
-      });
-
-      slider.addEventListener('mousemove', (event) => {
-        if (!isDown) {
-          return;
-        }
-
-        event.preventDefault();
-        const y = event.pageY - slider.offsetTop;
-        const walk = y - startY;
-        slider.scrollTop = scrollTop - walk;
-      });
-
-      const presetButtons = document.querySelectorAll('.preset-button');
-      presetButtons.forEach((button) => {
-        if (button.textContent.length < 5) {
-          button.style.whiteSpace = 'nowrap';
-        }
-      });
     });
   </script>
 </body>
