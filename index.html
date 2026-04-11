@@ -277,6 +277,7 @@
       let placedCharacters      = [];
       let isFallbackMode        = false;
       let isShootingMode        = false;
+      let isHitTestActive       = false;
       let suppressNextPlacement = false;
       let isExitingSession      = false;
       let exitSessionTimeoutId  = null;
@@ -370,17 +371,15 @@
       }
 
       function buildShadowElement() {
-        const el = document.createElement('a-plane');
-        el.setAttribute('height', CHAR_HEIGHT);
-        el.setAttribute('width', currentCharacterWidth);
+        const el = document.createElement('a-entity');
         el.setAttribute('position', `0 0.005 ${CHAR_HEIGHT / 2}`);
         el.setAttribute('rotation', '-90 0 0');
         const src = currentCharacterSrc;
+        const w   = currentCharacterWidth;
         el.addEventListener('loaded', () => {
           new THREE.TextureLoader().load(src, (tex) => {
-            const mesh = el.getObject3D('mesh');
-            if (!mesh) return;
-            mesh.material = new THREE.MeshBasicMaterial({
+            const geometry = new THREE.PlaneGeometry(w, CHAR_HEIGHT);
+            const material = new THREE.MeshBasicMaterial({
               map: tex,
               color: 0x000000,
               transparent: true,
@@ -389,7 +388,7 @@
               depthWrite: false,
               side: THREE.DoubleSide,
             });
-            mesh.material.needsUpdate = true;
+            el.setObject3D('mesh', new THREE.Mesh(geometry, material));
           });
         });
         return el;
@@ -484,6 +483,10 @@
         if (!placedCharacters.length) return;
         isShootingMode = true;
         mainUI.classList.add('shooting-mode');
+        reticle.setAttribute('visible', false);
+        placedCharacters.forEach(c => {
+          if (c.__outline) c.__outline.setAttribute('visible', false);
+        });
         updateInstructions();
       }
 
@@ -491,6 +494,10 @@
         if (!isShootingMode) return;
         isShootingMode = false;
         mainUI.classList.remove('shooting-mode');
+        if (!isFallbackMode && isHitTestActive) reticle.setAttribute('visible', true);
+        if (activeCharacter && activeCharacter.__outline) {
+          activeCharacter.__outline.setAttribute('visible', true);
+        }
         updateInstructions();
       }
 
@@ -672,6 +679,7 @@
 
       // ── Scene events ──
       sceneEl.addEventListener('ar-hit-test-achieved', () => {
+        isHitTestActive = true;
         if (!isFallbackMode && !isShootingMode) {
           reticle.setAttribute('visible', true);
           updateInstructions();
@@ -679,6 +687,7 @@
       });
 
       sceneEl.addEventListener('ar-hit-test-lost', () => {
+        isHitTestActive = false;
         if (!isFallbackMode && !isShootingMode) {
           reticle.setAttribute('visible', false);
           updateInstructions();
