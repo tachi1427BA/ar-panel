@@ -370,29 +370,7 @@
         return el;
       }
 
-      function buildShadowElement() {
-        const el = document.createElement('a-entity');
-        el.setAttribute('position', `0 0.005 ${CHAR_HEIGHT / 2}`);
-        el.setAttribute('rotation', '-90 0 0');
-        const src = currentCharacterSrc;
-        const w   = currentCharacterWidth;
-        el.addEventListener('loaded', () => {
-          new THREE.TextureLoader().load(src, (tex) => {
-            const geometry = new THREE.PlaneGeometry(w, CHAR_HEIGHT);
-            const material = new THREE.MeshBasicMaterial({
-              map: tex,
-              color: 0x000000,
-              transparent: true,
-              opacity: 0.45,
-              alphaTest: 0.5,
-              depthWrite: false,
-              side: THREE.DoubleSide,
-            });
-            el.setObject3D('mesh', new THREE.Mesh(geometry, material));
-          });
-        });
-        return el;
-      }
+      function buildShadowElement() { /* replaced by direct Three.js mesh in createCharacterEntity */ }
 
       function buildOutlineElement() {
         const outer = document.createElement('a-entity');
@@ -430,15 +408,37 @@
         el.setAttribute('scale', '1 1 1');
 
         const body    = buildBodyElement();
-        const shadow  = buildShadowElement();
         const outline = buildOutlineElement();
 
         el.appendChild(outline);
         el.appendChild(body);
-        el.appendChild(shadow);
         el.__outline = outline;
 
         charactersContainer.appendChild(el);
+
+        // Add shadow mesh directly to Three.js object — bypasses A-Frame component pipeline
+        const charSrc   = currentCharacterSrc;
+        const charWidth = currentCharacterWidth;
+        new THREE.TextureLoader().load(charSrc, (tex) => {
+          if (!el.parentNode) return;
+          tex.colorSpace = THREE.SRGBColorSpace;
+          const geometry = new THREE.PlaneGeometry(charWidth, CHAR_HEIGHT);
+          const material = new THREE.MeshBasicMaterial({
+            map: tex,
+            color: 0x000000,
+            transparent: true,
+            opacity: 0.45,
+            alphaTest: 0.5,
+            depthWrite: false,
+            side: THREE.DoubleSide,
+          });
+          const mesh = new THREE.Mesh(geometry, material);
+          // Lay flat on the ground: rotate -90° around X, pivot from feet forward
+          mesh.rotation.x = -Math.PI / 2;
+          mesh.position.set(0, 0.005, CHAR_HEIGHT / 2);
+          el.object3D.add(mesh);
+        });
+
         placedCharacters.push(el);
         setActiveCharacter(el);
         return el;
@@ -695,12 +695,11 @@
       });
 
       sceneEl.addEventListener('ar-hit-test-select', () => {
+        if (suppressNextPlacement) { suppressNextPlacement = false; return; }
         if (isShootingMode) {
           exitShootingMode();
-          suppressPlacementTemporarily();
           return;
         }
-        if (suppressNextPlacement) { suppressNextPlacement = false; return; }
         const pos = reticle.getAttribute('position');
         const rot = reticle.getAttribute('rotation');
         if (!pos) return;
