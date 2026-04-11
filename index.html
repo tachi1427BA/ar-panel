@@ -375,26 +375,48 @@
         el.setAttribute('width', currentCharacterWidth);
         el.setAttribute('position', `0 0.005 ${CHAR_HEIGHT / 2}`);
         el.setAttribute('rotation', '-90 0 0');
-        el.setAttribute('material', {
-          src: currentCharacterSrc,
-          color: '#000000',
-          opacity: 0.4,
-          transparent: true,
-          alphaTest: 0.5,
-          shader: 'flat',
-          depthWrite: false,
+        const src = currentCharacterSrc;
+        el.addEventListener('loaded', () => {
+          new THREE.TextureLoader().load(src, (tex) => {
+            const mesh = el.getObject3D('mesh');
+            if (!mesh) return;
+            mesh.material = new THREE.MeshBasicMaterial({
+              map: tex,
+              color: 0x000000,
+              transparent: true,
+              opacity: 0.45,
+              alphaTest: 0.5,
+              depthWrite: false,
+              side: THREE.DoubleSide,
+            });
+            mesh.material.needsUpdate = true;
+          });
         });
         return el;
       }
 
       function buildOutlineElement() {
-        const el = document.createElement('a-plane');
-        el.setAttribute('height', CHAR_HEIGHT + 0.06);
-        el.setAttribute('width', currentCharacterWidth + 0.06);
-        el.setAttribute('position', `0 ${CHAR_HEIGHT / 2} -0.002`);
-        el.setAttribute('material', 'color: #ffffff; shader: flat');
-        el.setAttribute('visible', false);
-        return el;
+        const outer = document.createElement('a-entity');
+        outer.setAttribute('position', `0 ${CHAR_HEIGHT / 2} -0.001`);
+        outer.setAttribute('visible', false);
+        const w = currentCharacterWidth + 0.06;
+        const h = CHAR_HEIGHT + 0.06;
+        const t = 0.025;
+        const mat = 'color: #ffffff; shader: flat';
+        [
+          [w, t,  0,               h / 2 - t / 2],
+          [w, t,  0,             -(h / 2 - t / 2)],
+          [t, h, -(w / 2 - t / 2), 0],
+          [t, h,  (w / 2 - t / 2), 0],
+        ].forEach(([bw, bh, bx, by]) => {
+          const bar = document.createElement('a-plane');
+          bar.setAttribute('width', bw);
+          bar.setAttribute('height', bh);
+          bar.setAttribute('position', `${bx} ${by} 0`);
+          bar.setAttribute('material', mat);
+          outer.appendChild(bar);
+        });
+        return outer;
       }
 
       function createCharacterEntity(position, rotation) {
