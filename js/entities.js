@@ -62,6 +62,15 @@ export function buildCharacterEntity(position, rotation) {
   el.appendChild(body);
   el.__outline = outline;
 
+  // Ensure body and outline always render AFTER the shadow (renderOrder 0)
+  body.addEventListener('loaded', () => {
+    const mesh = body.getObject3D('mesh');
+    if (mesh) mesh.renderOrder = 1;
+  });
+  outline.addEventListener('loaded', () => {
+    outline.object3D.traverse(obj => { if (obj.isMesh) obj.renderOrder = 1; });
+  });
+
   dom.charactersContainer.appendChild(el);
 
   // Add shadow mesh directly to Three.js object — bypasses A-Frame component pipeline
@@ -86,7 +95,7 @@ export function buildCharacterEntity(position, rotation) {
       side: THREE.DoubleSide,
     });
     const mesh = new THREE.Mesh(geometry, material);
-    mesh.renderOrder = -1;
+    mesh.renderOrder = 0;
     // Lay flat on the ground: rotate -90° around X, pivot from feet forward
     mesh.rotation.x = -Math.PI / 2;
     mesh.position.set(0, 0.005, -CHAR_HEIGHT / 2);
