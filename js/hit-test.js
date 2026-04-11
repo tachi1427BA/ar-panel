@@ -108,69 +108,22 @@ AFRAME.registerComponent('ar-continuous-hit-test', {
 /**
  * photo-capture system
  *
- * Uses the WebXR Raw Camera Access API (camera-access optional feature) to
- * obtain the camera image as a WebGL texture each XR frame.  This sidesteps
- * the Android restriction that prevents getUserMedia from running alongside
- * an active WebXR session.
+ * Runs in tock() — AFTER A-Frame's normal scene render — so the XR camera
+ * matrices are fully updated for the current frame.
  *
- * Flow (tock — runs AFTER A-Frame's normal render, inside the XR frame):
- *   1. Obtain XRWebGLBinding and the first XRView's camera texture.
- *   2. Render the camera texture to a full-screen quad (background pass).
- *   3. Render the Three.js scene (characters, transparent background)
- *      on top with renderer.xr.enabled = false to avoid XR viewport override.
- *   4. readRenderTargetPixels → Y-flip → 2-D canvas → callback.
- *
- * Fallback: if camera-access is unavailable (view.camera is null) the
- *   render target will contain only the characters on a transparent background.
+ * We temporarily disable renderer.xr.enabled before our custom render call.
+ * This prevents THREE.js from re-invoking the XR ArrayCamera (with its
+ * device-pixel-space viewport coordinates) and instead uses sceneEl.camera
+ * directly.  sceneEl.camera.matrixWorld already holds the correct XR pose
+ * because xr.updateCamera() was called during the normal render that just
+ * completed, and preserveDrawingBuffer keeps that state alive.
  *
  * Usage (from main.js):
- *   sceneEl.systems['photo-capture'].request(canvas => { ... });
+ *   sceneEl.systems['photo-capture'].request(arCanvas => { ... });
  */
 AFRAME.registerSystem('photo-capture', {
   init() {
     this.captureCallback = null;
-    this.xrBinding       = null;
-    this.bgScene         = null;
-    this.bgCamera        = null;
-    this.bgMesh          = null;
-
-    // Create / tear down XRWebGLBinding with the session lifecycle.
-    this.el.addEventListener('enter-vr', () => this._onEnterVR());
-    this.el.addEventListener('exit-vr',  () => { this.xrBinding = null; });
-  },
-
-  _onEnterVR() {
-    const renderer = this.el.renderer;
-    const session  = renderer.xr.getSession();
-    if (!session) return;
-    try {
-      this.xrBinding = new XRWebGLBinding(session, renderer.getContext()); // eslint-disable-line
-    } catch (e) {
-      console.warn('XRWebGLBinding unavailable:', e);
-      this.xrBinding = null;
-    }
-  },
-
-  _ensureBgScene() {
-    /* global THREE */
-    if (this.bgScene) return;
-
-    this.bgScene  = new THREE.Scene();
-    this.bgCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-
-    const geo = new THREE.PlaneGeometry(2, 2);
-    const mat = new THREE.ShaderMaterial({
-      uniforms:       { camTex: { value: null } },
-      vertexShader:   `varying vec2 vUv;
-void main(){vUv=uv;gl_Position=vec4(position.xy,1.0,1.0);}`,
-      fragmentShader: `uniform sampler2D camTex;
-varying vec2 vUv;
-void main(){gl_FragColor=texture2D(camTex,vec2(vUv.x,1.0-vUv.y));}`,
-      depthWrite: false,
-      depthTest:  false,
-    });
-    this.bgMesh = new THREE.Mesh(geo, mat);
-    this.bgScene.add(this.bgMesh);
   },
 
   tock() {
@@ -183,82 +136,48 @@ void main(){gl_FragColor=texture2D(camTex,vec2(vUv.x,1.0-vUv.y));}`,
     const renderer = sceneEl.renderer;
     const scene    = sceneEl.object3D;
     const camera   = sceneEl.camera;
-    const w        = renderer.domElement.width;
-    const h        = renderer.domElement.height;
+
+    // Use the canvas's actual physical-pixel dimensions so the aspect ratio
+    // and scale exactly match what the user sees in AR.
+    const w = renderer.domElement.width;
+    const h = renderer.domElement.height;
 
     const target          = new THREE.WebGLRenderTarget(w, h);
     const savedTarget     = renderer.getRenderTarget();
     const savedClearAlpha = renderer.getClearAlpha();
-    const savedAutoClear  = renderer.autoClear;
-    const xrWasEnabled    = renderer.xr.enabled;
 
-    renderer.autoClear   = false;
-    renderer.xr.enabled  = false;
+    // Disable XR override so renderer.render() uses our camera as-is,
+    // without re-mapping sub-camera viewports to device-pixel coordinates.
+    const xrWasEnabled = renderer.xr.enabled;
+    renderer.xr.enabled = false;
+
     renderer.setRenderTarget(target);
     renderer.setClearAlpha(0);
     renderer.clear();
-
-    // ── Pass 1: camera background (if camera-access is available) ──
-    const frame    = sceneEl.frame;
-    const refSpace = renderer.xr.getReferenceSpace ? renderer.xr.getReferenceSpace() : null;
-    let cameraTexUsed = false;
-
-    if (this.xrBinding && frame && refSpace) {
-      try {
-        const pose = frame.getViewerPose(refSpace);
-        if (pose && pose.views.length > 0) {
-          const view = pose.views[0];
-          if (view.camera) {
-            const glTex = this.xrBinding.getCameraImage(view.camera);
-            if (glTex) {
-              this._ensureBgScene();
-              // Wrap the raw WebGL texture in a Three.js Texture object.
-              const tex = new THREE.Texture();
-              renderer.properties.get(tex).__webglTexture = glTex;
-              renderer.properties.get(tex).__webglInit    = true;
-              this.bgMesh.material.uniforms.camTex.value  = tex;
-              renderer.render(this.bgScene, this.bgCamera);
-              cameraTexUsed = true;
-            }
-          }
-        }
-      } catch (e) {
-        console.warn('camera-access render failed:', e);
-      }
-    }
-
-    if (!cameraTexUsed) {
-      // No camera texture — leave background transparent (characters only).
-      renderer.clear();
-    }
-
-    // ── Pass 2: AR scene (characters) ──
     renderer.render(scene, camera);
-
-    // ── Restore state ──
     renderer.setRenderTarget(savedTarget);
     renderer.setClearAlpha(savedClearAlpha);
-    renderer.autoClear  = savedAutoClear;
     renderer.xr.enabled = xrWasEnabled;
 
-    // ── Read pixels & Y-flip ──
     const pixels = new Uint8Array(w * h * 4);
     renderer.readRenderTargetPixels(target, 0, 0, w, h, pixels);
     target.dispose();
 
-    const out    = document.createElement('canvas');
-    out.width    = w;
-    out.height   = h;
-    const outCtx  = out.getContext('2d');
-    const imgData = outCtx.createImageData(w, h);
+    // Build a canvas with Y-axis flipped (WebGL is bottom-up).
+    const arCanvas  = document.createElement('canvas');
+    arCanvas.width  = w;
+    arCanvas.height = h;
+    const arCtx   = arCanvas.getContext('2d');
+    const imgData = arCtx.createImageData(w, h);
     for (let y = 0; y < h; y++) {
       imgData.data.set(
         pixels.subarray((h - 1 - y) * w * 4, (h - y) * w * 4),
         y * w * 4,
       );
     }
-    outCtx.putImageData(imgData, 0, 0);
-    cb(out);
+    arCtx.putImageData(imgData, 0, 0);
+
+    cb(arCanvas);
   },
 
   request(callback) {
