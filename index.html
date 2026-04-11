@@ -220,7 +220,7 @@
   <a-scene
     id="scene"
     webxr="optionalFeatures: hit-test, local-floor, dom-overlay; overlayElement: #main-ui;"
-    ar-hit-test="target: #reticle; type: hittest; mapSize: 0.5 0.5"
+    ar-hit-test="target: #reticle; type: footprint"
     xr-mode-ui="enabled: false"
     renderer="colorManagement: true;"
   >
@@ -228,13 +228,13 @@
     </a-assets>
     <a-camera></a-camera>
 
-    <a-entity
-      id="reticle"
-      geometry="primitive: ring; radius-inner: 0.05; radius-outer: 0.08;"
-      material="color: white; shader: flat;"
-      rotation="-90 0 0"
-      visible="false"
-    ></a-entity>
+    <a-entity id="reticle" visible="false">
+      <a-entity
+        geometry="primitive: ring; radius-inner: 0.05; radius-outer: 0.08;"
+        material="color: white; shader: flat;"
+        rotation="-90 0 0"
+      ></a-entity>
+    </a-entity>
 
     <a-entity id="characters-container"></a-entity>
   </a-scene>
