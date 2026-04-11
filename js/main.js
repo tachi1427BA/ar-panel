@@ -143,68 +143,32 @@ function showPhotoPreview(dataUrl) {
 }
 
 function capturePhoto() {
-  /* global THREE */
-  const sceneEl  = dom.sceneEl;
-  const renderer = sceneEl.renderer;
-  const scene    = sceneEl.object3D;
-  // Use the XR camera when in AR (has the correct pose), else the A-Frame camera.
-  const camera   = renderer.xr.isPresenting ? renderer.xr.getCamera() : sceneEl.camera;
+  dom.sceneEl.systems['photo-capture'].request((arCanvas) => {
+    const video = getCameraVideo();
+    const w = arCanvas.width;
+    const h = arCanvas.height;
 
-  const w = window.innerWidth;
-  const h = window.innerHeight;
+    const final = document.createElement('canvas');
+    final.width  = w;
+    final.height = h;
+    const ctx = final.getContext('2d');
 
-  // Render characters to a dedicated WebGLRenderTarget — bypasses the XR
-  // compositor framebuffer which is not readable via canvas.toDataURL().
-  const target = new THREE.WebGLRenderTarget(w, h);
-  const savedTarget     = renderer.getRenderTarget();
-  const savedClearAlpha = renderer.getClearAlpha();
+    if (video && video.readyState >= 2) {
+      ctx.drawImage(video, 0, 0, w, h);
+    } else {
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, w, h);
+    }
+    ctx.drawImage(arCanvas, 0, 0);
 
-  renderer.setRenderTarget(target);
-  renderer.setClearAlpha(0);
-  renderer.clear();
-  renderer.render(scene, camera);
-  renderer.setRenderTarget(savedTarget);
-  renderer.setClearAlpha(savedClearAlpha);
-
-  // Read pixels (WebGL y-axis is bottom-up, flip vertically).
-  const pixels = new Uint8Array(w * h * 4);
-  renderer.readRenderTargetPixels(target, 0, 0, w, h, pixels);
-  target.dispose();
-
-  const arCanvas = document.createElement('canvas');
-  arCanvas.width  = w;
-  arCanvas.height = h;
-  const arCtx   = arCanvas.getContext('2d');
-  const imgData = arCtx.createImageData(w, h);
-  for (let y = 0; y < h; y++) {
-    const srcRow = (h - 1 - y) * w * 4;
-    imgData.data.set(pixels.subarray(srcRow, srcRow + w * 4), y * w * 4);
-  }
-  arCtx.putImageData(imgData, 0, 0);
-
-  // Composite: camera background + AR overlay (transparent where no character).
-  const finalCanvas = document.createElement('canvas');
-  finalCanvas.width  = w;
-  finalCanvas.height = h;
-  const ctx = finalCanvas.getContext('2d');
-
-  const video = getCameraVideo();
-  if (video && video.readyState >= 2) {
-    ctx.drawImage(video, 0, 0, w, h);
-  } else {
-    ctx.fillStyle = '#000';
-    ctx.fillRect(0, 0, w, h);
-  }
-  ctx.drawImage(arCanvas, 0, 0);
-
-  showPhotoPreview(finalCanvas.toDataURL('image/png'));
+    showPhotoPreview(final.toDataURL('image/png'));
+  });
 }
 
 // Shutter button is inside #main-ui, so the global pointerup handler ignores it.
 dom.shutterButton.addEventListener('pointerup', e => {
   e.stopPropagation();
-  // Wait one RAF so the last XR frame has been composited before we render.
-  requestAnimationFrame(() => capturePhoto());
+  capturePhoto();
 });
 
 dom.photoSaveButton.addEventListener('click', async () => {

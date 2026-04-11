@@ -104,3 +104,70 @@ AFRAME.registerComponent('ar-continuous-hit-test', {
     }
   },
 });
+
+/**
+ * photo-capture system
+ *
+ * Executes the WebGL render-to-renderTarget inside the A-Frame / XR frame
+ * loop (system tick), where XR camera matrices are valid and the WebGL
+ * context is in an active XR state.  Calling renderer.render() from a
+ * regular requestAnimationFrame between XR frames can silently produce black
+ * output because the XR compositor restricts WebGL access between frames.
+ *
+ * Usage (from main.js):
+ *   sceneEl.systems['photo-capture'].request(arCanvas => { ... });
+ */
+AFRAME.registerSystem('photo-capture', {
+  init() {
+    this.captureCallback = null;
+  },
+
+  tick() {
+    if (!this.captureCallback) return;
+    const cb = this.captureCallback;
+    this.captureCallback = null;
+
+    /* global THREE */
+    const sceneEl  = this.el;
+    const renderer = sceneEl.renderer;
+    const scene    = sceneEl.object3D;
+    const camera   = sceneEl.camera;
+    const w        = window.innerWidth;
+    const h        = window.innerHeight;
+
+    const target          = new THREE.WebGLRenderTarget(w, h);
+    const savedTarget     = renderer.getRenderTarget();
+    const savedClearAlpha = renderer.getClearAlpha();
+
+    renderer.setRenderTarget(target);
+    renderer.setClearAlpha(0);
+    renderer.clear();
+    renderer.render(scene, camera);
+    renderer.setRenderTarget(savedTarget);
+    renderer.setClearAlpha(savedClearAlpha);
+
+    const pixels = new Uint8Array(w * h * 4);
+    renderer.readRenderTargetPixels(target, 0, 0, w, h, pixels);
+    target.dispose();
+
+    // Build an ImageData canvas with Y-axis flipped (WebGL is bottom-up).
+    const arCanvas  = document.createElement('canvas');
+    arCanvas.width  = w;
+    arCanvas.height = h;
+    const arCtx   = arCanvas.getContext('2d');
+    const imgData = arCtx.createImageData(w, h);
+    for (let y = 0; y < h; y++) {
+      imgData.data.set(
+        pixels.subarray((h - 1 - y) * w * 4, (h - y) * w * 4),
+        y * w * 4,
+      );
+    }
+    arCtx.putImageData(imgData, 0, 0);
+
+    cb(arCanvas);
+  },
+
+  request(callback) {
+    this.captureCallback = callback;
+  },
+});
