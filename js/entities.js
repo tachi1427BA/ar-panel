@@ -67,9 +67,13 @@ export function buildCharacterEntity(position, rotation) {
   el.dataset.label        = state.currentCharacterLabel || `キャラクター${state.characterCounter}`;
   el.dataset.characterKey = state.currentCharacterKey;
   el.setAttribute('position', cloneVector(position));
-  // Use only Y rotation — reticle sends X=-90 (flat on floor) which would
-  // lay the character plane down and show the image at ground level.
-  el.setAttribute('rotation', { x: 0, y: (rotation && rotation.y) || 0, z: 0 });
+  // Always face the user: compute Y rotation from character position toward camera.
+  /* global THREE */
+  const camPos = dom.sceneEl.camera.getWorldPosition(new THREE.Vector3());
+  const dx = camPos.x - position.x;
+  const dz = camPos.z - position.z;
+  const facingY = THREE.MathUtils.radToDeg(Math.atan2(dx, dz));
+  el.setAttribute('rotation', { x: 0, y: facingY, z: 0 });
   el.setAttribute('scale', '1 1 1');
 
   const body    = buildBodyElement();
