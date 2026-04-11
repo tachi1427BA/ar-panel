@@ -9,11 +9,20 @@ export function buildBodyElement() {
   el.setAttribute('height', CHAR_HEIGHT);
   el.setAttribute('width', state.currentCharacterWidth);
   el.setAttribute('position', `0 ${CHAR_HEIGHT / 2} 0`);
-  el.setAttribute('material', {
-    src: state.currentCharacterSrc,
-    shader: 'flat',
-    transparent: true,
-    alphaTest: 0.5,
+  // Don't pass src to A-Frame's material — blob URLs fail silently in WebXR.
+  // Load the texture via THREE.TextureLoader (same approach used for the shadow).
+  el.setAttribute('material', { shader: 'flat', transparent: true, alphaTest: 0.5 });
+  const src = state.currentCharacterSrc;
+  el.addEventListener('loaded', () => {
+    /* global THREE */
+    new THREE.TextureLoader().load(src, (tex) => {
+      tex.colorSpace = THREE.SRGBColorSpace;
+      const mesh = el.getObject3D('mesh');
+      if (mesh && mesh.material) {
+        mesh.material.map = tex;
+        mesh.material.needsUpdate = true;
+      }
+    });
   });
   return el;
 }
