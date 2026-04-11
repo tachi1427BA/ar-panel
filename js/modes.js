@@ -26,7 +26,7 @@ export function enterShootingMode() {
   if (!state.placedCharacters.length) return;
   state.isShootingMode = true;
   dom.mainUI.classList.add('shooting-mode');
-  dom.reticle.setAttribute('visible', false);
+  dom.placementPreview.setAttribute('visible', false);
   state.placedCharacters.forEach(c => {
     if (c.__outline) c.__outline.setAttribute('visible', false);
   });
@@ -37,7 +37,9 @@ export function exitShootingMode() {
   if (!state.isShootingMode) return;
   state.isShootingMode = false;
   dom.mainUI.classList.remove('shooting-mode');
-  if (!state.isFallbackMode && state.isHitTestActive) dom.reticle.setAttribute('visible', true);
+  if (!state.isFallbackMode && state.isHitTestActive) {
+    dom.placementPreview.setAttribute('visible', true);
+  }
   if (state.activeCharacter && state.activeCharacter.__outline) {
     state.activeCharacter.__outline.setAttribute('visible', true);
   }
@@ -53,6 +55,7 @@ export function enterFallbackMode(message) {
   dom.exitArButton.classList.remove('hidden');
   dom.editControls.style.display = 'flex';
   dom.addCharacterButton.classList.remove('hidden');
+  dom.placementPreview.setAttribute('visible', false);
   collapsePanel();
   if (!state.placedCharacters.length) addFallbackCharacter();
   updateInstructions();
@@ -71,7 +74,7 @@ export function resetToMainMenu() {
   dom.instructionsEl.style.display     = 'none';
   dom.editControls.style.display       = 'none';
   dom.addCharacterButton.classList.add('hidden');
-  dom.reticle.setAttribute('visible', false);
+  dom.placementPreview.setAttribute('visible', false);
   clearPlacedCharacters();
   expandPanel();
 }

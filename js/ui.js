@@ -29,7 +29,7 @@ export function updateInstructions() {
   if (state.isFallbackMode) {
     dom.instructionsEl.textContent = '「キャラを追加」で配置 / キャラをタップで選択';
   } else {
-    dom.instructionsEl.textContent = dom.reticle.getAttribute('visible')
+    dom.instructionsEl.textContent = dom.placementPreview.getAttribute('visible')
       ? '平面をタップで配置 / キャラをタップで選択'
       : '平面にカメラを向けてください';
   }
@@ -51,10 +51,19 @@ export function setCurrentCharacter(source, label, key) {
   dom.charHandlePreview.src    = source;
   dom.charPanelLabel.textContent = label;
   updatePresetHighlight(resolvedKey);
+  // Update placement preview to reflect the newly selected character
+  dom.placementPreview.setAttribute('material', {
+    src: source,
+    shader: 'flat',
+    transparent: true,
+    opacity: 0.55,
+    alphaTest: 0.1,
+  });
 }
 
 export function updateCurrentCharacterDimensions() {
   const img = dom.imagePreview;
   if (!img.src || !img.complete || !img.naturalHeight) return;
   state.currentCharacterWidth = CHAR_HEIGHT * (img.naturalWidth / img.naturalHeight);
+  dom.placementPreview.setAttribute('width', state.currentCharacterWidth);
 }

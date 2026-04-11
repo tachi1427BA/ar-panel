@@ -21,5 +21,6 @@ export const dom = {
   presetSelector:     document.getElementById('preset-selector'),
   charPanelBody:      document.getElementById('char-panel-body'),
   reticle:            document.getElementById('reticle'),
+  placementPreview:   document.getElementById('placement-preview'),
   charactersContainer: document.getElementById('characters-container'),
 };
