@@ -87,7 +87,7 @@ export function buildCharacterEntity(position, rotation) {
     const mesh = new THREE.Mesh(geometry, material);
     // Lay flat on the ground: rotate -90° around X, pivot from feet forward
     mesh.rotation.x = -Math.PI / 2;
-    mesh.position.set(0, 0.005, CHAR_HEIGHT / 2);
+    mesh.position.set(0, 0.005, -CHAR_HEIGHT / 2);
     el.object3D.add(mesh);
   });
 
