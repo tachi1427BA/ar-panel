@@ -24,6 +24,7 @@ import {
   startARSession,
   suppressPlacementTemporarily,
   handleScenePointer,
+  getCameraVideo,
 } from './modes.js';
 
 // ── Image preview dimensions ──
@@ -130,6 +131,80 @@ dom.shootModeButton.addEventListener('click',   () => enterShootingMode());
 dom.deleteCharacterButton.addEventListener('click', () => removeActiveCharacter());
 dom.addCharacterButton.addEventListener('click', () => addFallbackCharacter());
 dom.exitArButton.addEventListener('click',       () => requestExitToMainMenu());
+
+// ── Photo capture ──
+
+let capturedDataUrl = null;
+
+function showPhotoPreview(dataUrl) {
+  capturedDataUrl = dataUrl;
+  dom.photoPreviewImg.src = dataUrl;
+  dom.photoPreview.classList.add('visible');
+}
+
+async function capturePhoto() {
+  const glCanvas = dom.sceneEl.canvas;
+  const w = glCanvas.width || window.innerWidth;
+  const h = glCanvas.height || window.innerHeight;
+
+  const offscreen = document.createElement('canvas');
+  offscreen.width  = w;
+  offscreen.height = h;
+  const ctx = offscreen.getContext('2d');
+
+  const video = getCameraVideo();
+  if (video && video.readyState >= 2) {
+    // Draw camera background then AR overlay
+    ctx.drawImage(video, 0, 0, w, h);
+    ctx.drawImage(glCanvas, 0, 0, w, h);
+  } else {
+    // Fallback: characters only on black background
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, w, h);
+    ctx.drawImage(glCanvas, 0, 0, w, h);
+  }
+
+  showPhotoPreview(offscreen.toDataURL('image/png'));
+}
+
+// Shutter button is inside #main-ui, so the global pointerup handler ignores it.
+dom.shutterButton.addEventListener('pointerup', e => {
+  e.stopPropagation();
+  // Capture after next two animation frames to ensure WebGL frame is complete.
+  requestAnimationFrame(() => requestAnimationFrame(() => capturePhoto()));
+});
+
+dom.photoSaveButton.addEventListener('click', async () => {
+  if (!capturedDataUrl) return;
+  const fileName = `ar_photo_${Date.now()}.png`;
+
+  const res  = await fetch(capturedDataUrl);
+  const blob = await res.blob();
+  const file = new File([blob], fileName, { type: 'image/png' });
+
+  if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: 'AR写真' });
+      return;
+    } catch (err) {
+      if (err.name === 'AbortError') return;
+    }
+  }
+
+  // Fallback download
+  const url = URL.createObjectURL(blob);
+  const a   = document.createElement('a');
+  a.href     = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 30000);
+});
+
+dom.photoCloseButton.addEventListener('click', () => {
+  exitShootingMode();
+});
 
 // ── Global pointer (scene tap) ──
 // Suppress XR placement when the tap target is inside the UI overlay.

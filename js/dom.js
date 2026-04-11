@@ -23,4 +23,9 @@ export const dom = {
   charPanelBody:      document.getElementById('char-panel-body'),
   reticle:            document.getElementById('reticle'),
   charactersContainer: document.getElementById('characters-container'),
+  shutterButton:      document.getElementById('shutter-button'),
+  photoPreview:       document.getElementById('photo-preview'),
+  photoPreviewImg:    document.getElementById('photo-preview-img'),
+  photoSaveButton:    document.getElementById('photo-save-button'),
+  photoCloseButton:   document.getElementById('photo-close-button'),
 };

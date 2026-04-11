@@ -32,6 +32,52 @@
       visibility: hidden;
       pointer-events: none !important;
     }
+    /* Shutter button: visible even in shooting mode */
+    #shutter-button {
+      position: fixed;
+      bottom: 48px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 76px; height: 76px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.95);
+      border: 5px solid rgba(200,200,200,0.8);
+      font-size: 30px;
+      cursor: pointer;
+      z-index: 2000;
+      pointer-events: auto;
+      display: none;
+      align-items: center; justify-content: center;
+      box-shadow: 0 0 0 5px rgba(255,255,255,0.35);
+    }
+    #main-ui.shooting-mode > #shutter-button {
+      display: flex;
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto !important;
+    }
+
+    /* Photo preview overlay */
+    #photo-preview {
+      display: none;
+      position: fixed; inset: 0;
+      z-index: 5000;
+      background: rgba(0,0,0,0.92);
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+    }
+    #photo-preview.visible { display: flex; }
+    #photo-preview-img {
+      max-width: 100%;
+      max-height: calc(100vh - 100px);
+      object-fit: contain;
+      border-radius: 8px;
+    }
+    #photo-preview-actions {
+      display: flex; gap: 12px;
+    }
 
     /* ── Top bar ── */
     #top-bar {
@@ -217,14 +263,26 @@
       </div>
     </div>
 
+    <!-- Shutter button: visible only in shooting mode, inside #main-ui so scene pointer ignores it -->
+    <button id="shutter-button" aria-label="撮影">📸</button>
+
   </div><!-- #main-ui -->
+
+  <!-- Photo preview overlay (outside #main-ui to avoid shooting-mode CSS) -->
+  <div id="photo-preview" role="dialog" aria-label="撮影プレビュー">
+    <img id="photo-preview-img" alt="撮影した写真">
+    <div id="photo-preview-actions">
+      <button id="photo-save-button" class="u-button">保存</button>
+      <button id="photo-close-button" class="u-button" style="background:#555;">閉じる</button>
+    </div>
+  </div>
 
   <a-scene
     id="scene"
     webxr="optionalFeatures: hit-test, local-floor, dom-overlay; overlayElement: #main-ui;"
     ar-continuous-hit-test="target: #reticle"
     xr-mode-ui="enabled: false"
-    renderer="colorManagement: true;"
+    renderer="colorManagement: true; preserveDrawingBuffer: true; alpha: true;"
   >
     <a-assets>
     </a-assets>
