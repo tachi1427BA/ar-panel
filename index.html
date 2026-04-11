@@ -725,7 +725,7 @@
 
       window.addEventListener('pointerup', e => {
         if (!sessionIsActive()) return;
-        if (!isShootingMode && mainUI.contains(e.target)) return;
+        if (mainUI.contains(e.target)) return;
         handleScenePointer(e.clientX, e.clientY);
       }, true);
 
