@@ -53,7 +53,8 @@ export function updateInstructions() {
 
 export function updatePresetHighlight(key) {
   document.querySelectorAll('.preset-button').forEach(btn => {
-    btn.classList.toggle('active-preset', btn.dataset.src === key);
+    const btnKey = btn.dataset.charKey || btn.dataset.src;
+    btn.classList.toggle('active-preset', btnKey === key);
   });
 }
 

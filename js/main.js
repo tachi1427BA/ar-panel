@@ -8,6 +8,7 @@ import {
   updateCurrentCharacterDimensions,
   updateInstructions,
   updateReticleVisibility,
+  sessionIsActive,
 } from './ui.js';
 import {
   placeCharacterAt,
@@ -38,17 +39,44 @@ dom.charPanelHandle.addEventListener('click', () => {
 dom.presetSelector.addEventListener('click', e => {
   const btn = e.target.closest('.preset-button');
   if (!btn || !btn.dataset.src) return;
-  setCurrentCharacter(btn.dataset.src, btn.textContent.trim(), btn.dataset.src);
+  const key = btn.dataset.charKey || btn.dataset.src;
+  setCurrentCharacter(btn.dataset.src, btn.textContent.trim(), key);
+});
+
+// Track whether AR was active when the file picker was opened.
+let pendingARResume = false;
+document.querySelector('label[for="image-upload-input"]').addEventListener('pointerdown', () => {
+  pendingARResume = sessionIsActive() && !state.isFallbackMode;
 });
 
 dom.imageUploadInput.addEventListener('change', e => {
   const file = e.target.files[0];
   if (!file) return;
-  const url = URL.createObjectURL(file);
+  const url   = URL.createObjectURL(file);
   state.createdObjectUrls.add(url);
   const key   = `upload:${file.name}`;
   const label = file.name.replace(/\.[^/.]+$/, '') || file.name;
+
+  // Add or update the uploaded image button in the preset grid.
+  let btn = dom.presetSelector.querySelector(`[data-char-key="${CSS.escape(key)}"]`);
+  if (btn) {
+    btn.dataset.src = url;
+  } else {
+    btn = document.createElement('button');
+    btn.className        = 'u-button preset-button';
+    btn.dataset.src      = url;
+    btn.dataset.charKey  = key;
+    btn.textContent      = label;
+    dom.presetSelector.insertBefore(btn, dom.presetSelector.firstChild);
+  }
+
   setCurrentCharacter(url, label, key);
+
+  if (pendingARResume) {
+    pendingARResume = false;
+    // Wait for the OS file picker to fully dismiss before re-entering AR.
+    setTimeout(() => startARSession(), 500);
+  }
 });
 
 // ── Start overlay ──
