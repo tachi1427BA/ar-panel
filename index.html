@@ -121,16 +121,42 @@
     }
     .preset-button { padding: 6px 2px; font-size: 13px; }
     .preset-button.active-preset { background-color: #2ecc71; color: #000; }
+    /* ── Start overlay ── */
+    #start-overlay {
+      position: fixed; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      background: rgba(0, 0, 0, 0.82);
+      z-index: 2000; cursor: pointer;
+      gap: 20px;
+    }
+    #start-overlay-title {
+      font-size: 22px; font-weight: bold; color: white;
+      text-shadow: 0 0 8px rgba(52,152,219,0.8);
+    }
+    #start-overlay-hint {
+      font-size: 16px; color: rgba(255,255,255,0.75);
+      animation: pulse 1.8s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.5; }
+      50%       { opacity: 1; }
+    }
   </style>
 </head>
 <body>
   <div id="main-ui">
 
+    <!-- ── Start overlay (shown before session begins) ── -->
+    <div id="start-overlay">
+      <div id="start-overlay-title">AR立ち絵 Viewer</div>
+      <div id="start-overlay-hint">タップして開始</div>
+    </div>
+
     <!-- ── Top bar ── -->
     <div id="top-bar">
       <span id="app-title">AR立ち絵 Viewer</span>
       <div>
-        <button id="ar-button" class="u-button">ARを開始</button>
         <button id="exit-ar-button" class="u-button hidden">戻る</button>
       </div>
     </div>
@@ -221,7 +247,7 @@
       // ── DOM refs ──
       const sceneEl            = document.querySelector('a-scene');
       const mainUI             = document.getElementById('main-ui');
-      const arButton           = document.getElementById('ar-button');
+      const startOverlay       = document.getElementById('start-overlay');
       const exitArButton       = document.getElementById('exit-ar-button');
       const instructionsEl     = document.getElementById('instructions');
       const editControls       = document.getElementById('edit-controls');
@@ -353,7 +379,7 @@
         el.setAttribute('position', '0 0.005 0');
         el.setAttribute('rotation', '-90 0 0');
         el.setAttribute('material', {
-          src: '#circle-texture',
+          src: 'circle.png',
           color: '#000',
           opacity: 0.28,
           transparent: true,
@@ -372,7 +398,7 @@
         el.setAttribute('rotation', '-90 0 0');
         el.setAttribute('visible', false);
         el.setAttribute('material', {
-          src: '#circle-texture',
+          src: 'circle.png',
           transparent: true,
           opacity: 0.65,
           shader: 'flat',
@@ -460,7 +486,7 @@
       function enterFallbackMode(message) {
         alert(message);
         isFallbackMode = true;
-        arButton.classList.add('hidden');
+        startOverlay.style.display = 'none';
         exitArButton.classList.remove('hidden');
         editControls.style.display = 'flex';
         addCharacterButton.classList.remove('hidden');
@@ -477,8 +503,8 @@
         exitShootingMode();
         isFallbackMode        = false;
         suppressNextPlacement = false;
-        arButton.classList.remove('hidden');
         exitArButton.classList.add('hidden');
+        startOverlay.style.display = '';
         instructionsEl.style.display = 'none';
         editControls.style.display   = 'none';
         addCharacterButton.classList.add('hidden');
@@ -604,8 +630,8 @@
         setCurrentCharacter(url, file.name || 'アップロード画像', key);
       });
 
-      // ── AR button ──
-      arButton.addEventListener('click', () => {
+      // ── Start overlay tap ──
+      function startARSession() {
         if (!navigator.xr) {
           enterFallbackMode('お使いのブラウザはWebXRに対応していません。3Dビューで表示します。');
           return;
@@ -616,7 +642,7 @@
             return;
           }
           isFallbackMode = false;
-          arButton.classList.add('hidden');
+          startOverlay.style.display = 'none';
           exitArButton.classList.remove('hidden');
           editControls.style.display = 'flex';
           addCharacterButton.classList.add('hidden');
@@ -628,7 +654,9 @@
           console.error(err);
           enterFallbackMode('ARセッションの確認中にエラーが発生しました。3Dビューで表示します。');
         });
-      });
+      }
+
+      startOverlay.addEventListener('pointerup', startARSession);
 
       // ── Scene events ──
       sceneEl.addEventListener('ar-hit-test-achieved', () => {
