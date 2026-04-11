@@ -707,6 +707,10 @@
       exitArButton.addEventListener('click', () => requestExitToMainMenu());
 
       // ── Global pointer (scene tap) ──
+      // Suppress XR placement when the tap target is inside the UI overlay.
+      // ar-hit-test-select fires even for dom-overlay taps, so we suppress it here.
+      mainUI.addEventListener('pointerdown', suppressPlacementTemporarily, true);
+
       window.addEventListener('pointerup', e => {
         if (!sessionIsActive()) return;
         if (!isShootingMode && mainUI.contains(e.target)) return;
