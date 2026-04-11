@@ -1,0 +1,25 @@
+// DOM references — safe to initialize at module level because <script type="module">
+// is deferred and runs after the document has been parsed.
+export const dom = {
+  sceneEl:            document.querySelector('a-scene'),
+  mainUI:             document.getElementById('main-ui'),
+  startOverlay:       document.getElementById('start-overlay'),
+  exitArButton:       document.getElementById('exit-ar-button'),
+  instructionsEl:     document.getElementById('instructions'),
+  editControls:       document.getElementById('edit-controls'),
+  selectionStatus:    document.getElementById('selection-status'),
+  addCharacterButton: document.getElementById('add-character-button'),
+  scaleDownButton:    document.getElementById('scale-down-button'),
+  scaleUpButton:      document.getElementById('scale-up-button'),
+  shootModeButton:    document.getElementById('shoot-mode-button'),
+  charPanel:          document.getElementById('char-panel'),
+  charPanelHandle:    document.getElementById('char-panel-handle'),
+  charPanelLabel:     document.getElementById('char-panel-label'),
+  charHandlePreview:  document.getElementById('char-handle-preview'),
+  imagePreview:       document.getElementById('image-preview'),
+  imageUploadInput:   document.getElementById('image-upload-input'),
+  presetSelector:     document.getElementById('preset-selector'),
+  charPanelBody:      document.getElementById('char-panel-body'),
+  reticle:            document.getElementById('reticle'),
+  charactersContainer: document.getElementById('characters-container'),
+};
