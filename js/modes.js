@@ -172,6 +172,10 @@ function _startXR8ARSession() {
       // ストリームを即座に解放; XR8 が改めてカメラを開く
       stream.getTracks().forEach(t => t.stop());
       // 権限取得済みなので xrweb が非同期で XR8.run() を呼んでも iOS が許可する
+      // xrconfig を xrweb より先に追加（XR8 設定の初期化順序を保証）
+      if (!dom.sceneEl.components['xrconfig']) {
+        dom.sceneEl.setAttribute('xrconfig', '');
+      }
       dom.sceneEl.setAttribute('xrweb', 'allowedDevices: any');
       _showARUI();
     })
