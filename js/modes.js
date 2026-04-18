@@ -77,6 +77,14 @@ export function resetToMainMenu() {
   updateReticleVisibility();
   clearPlacedCharacters();
   expandPanel();
+
+  // XR8 モードで無効化した look-controls を復元
+  const cameraEl = dom.sceneEl.querySelector('[camera]');
+  if (cameraEl) {
+    cameraEl.setAttribute('look-controls', 'enabled: true');
+    cameraEl.setAttribute('wasd-controls', 'enabled: true');
+  }
+  _xr8Starting = false;
 }
 
 export function finishExitToMainMenu() {
@@ -146,12 +154,16 @@ export function startARSession() {
 // user gesture（touchend/click）内から呼ばれることが前提。
 // iOS 13+ の DeviceOrientationEvent.requestPermission() と getUserMedia() を
 // ジェスチャーコンテキスト内で同期的に開始してから xrweb を起動する。
+let _xr8Starting = false; // 二重起動防止フラグ（iOS権限ダイアログのタップ透過対策）
+
 function _startXR8ARSession() {
   if (dom.sceneEl.components['xrweb']) {
     // 再入時（exit 後の再開）: 既に XR8 起動済みなので UI だけ表示
     _showARUI();
     return;
   }
+  if (_xr8Starting) return; // 二重起動防止
+  _xr8Starting = true;
 
   // 両 Promise を同期的に開始（iOS はジェスチャーコンテキスト内と認識する）
   const orientationP =
@@ -166,11 +178,20 @@ function _startXR8ARSession() {
 
   Promise.all([orientationP, cameraP])
     .then(([orientState, stream]) => {
+      _xr8Starting = false;
       if (orientState !== 'granted') {
         throw Object.assign(new Error(), { name: 'OrientationDeniedError' });
       }
       // ストリームを即座に解放; XR8 が改めてカメラを開く
       stream.getTracks().forEach(t => t.stop());
+
+      // look-controls を無効化: XR8 が自前でカメラ姿勢を制御するため
+      const cameraEl = dom.sceneEl.querySelector('[camera]');
+      if (cameraEl) {
+        cameraEl.setAttribute('look-controls', 'enabled: false');
+        cameraEl.setAttribute('wasd-controls', 'enabled: false');
+      }
+
       // 権限取得済みなので xrweb が非同期で XR8.run() を呼んでも iOS が許可する
       // xrconfig を xrweb より先に追加（XR8 設定の初期化順序を保証）
       if (!dom.sceneEl.components['xrconfig']) {
@@ -180,6 +201,7 @@ function _startXR8ARSession() {
       _showARUI();
     })
     .catch(err => {
+      _xr8Starting = false;
       console.error('AR start error:', err);
       enterFallbackMode(_getPermissionErrorMessage(err));
     });
