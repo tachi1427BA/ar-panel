@@ -114,19 +114,7 @@ export function startARSession() {
   if (window.XR8) {
     const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     if (isMobile) {
-      // user gesture 内で xrweb を追加 → xrweb.init() が同期で XR8.run() を呼ぶ
-      // iOS Safari はこの gesture コンテキストでカメラ権限を許可する
-      if (!dom.sceneEl.components['xrweb']) {
-        dom.sceneEl.setAttribute('xrweb', 'allowedDevices: any');
-      }
-      state.isFallbackMode = false;
-      dom.startOverlay.style.display = 'none';
-      dom.exitArButton.classList.remove('hidden');
-      dom.editControls.style.display = 'flex';
-      dom.addCharacterButton.classList.add('hidden');
-      collapsePanel();
-      updateInstructions();
-      updateControlStates();
+      _startXR8ARSession();
       return;
     }
   }
@@ -154,6 +142,71 @@ export function startARSession() {
     console.error(err);
     enterFallbackMode('ARセッションの確認中にエラーが発生しました。3Dビューで表示します。');
   });
+}
+
+// iOS/Android 向け XR8 ARセッション開始。
+// user gesture（touchend/click）内から呼ばれることが前提。
+// iOS 13+ の DeviceOrientationEvent.requestPermission() と getUserMedia() を
+// ジェスチャーコンテキスト内で同期的に開始してから xrweb を起動する。
+function _startXR8ARSession() {
+  if (dom.sceneEl.components['xrweb']) {
+    // 再入時（exit 後の再開）: 既に XR8 起動済みなので UI だけ表示
+    _showARUI();
+    return;
+  }
+
+  // 両 Promise を同期的に開始（iOS はジェスチャーコンテキスト内と認識する）
+  const orientationP =
+    typeof DeviceOrientationEvent !== 'undefined' &&
+    typeof DeviceOrientationEvent.requestPermission === 'function'
+      ? DeviceOrientationEvent.requestPermission()
+      : Promise.resolve('granted');
+
+  const cameraP = navigator.mediaDevices
+    ? navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+    : Promise.reject(Object.assign(new Error(), { name: 'SecurityError' }));
+
+  Promise.all([orientationP, cameraP])
+    .then(([orientState, stream]) => {
+      if (orientState !== 'granted') {
+        throw Object.assign(new Error(), { name: 'OrientationDeniedError' });
+      }
+      // ストリームを即座に解放; XR8 が改めてカメラを開く
+      stream.getTracks().forEach(t => t.stop());
+      // 権限取得済みなので xrweb が非同期で XR8.run() を呼んでも iOS が許可する
+      dom.sceneEl.setAttribute('xrweb', 'allowedDevices: any');
+      _showARUI();
+    })
+    .catch(err => {
+      console.error('AR start error:', err);
+      enterFallbackMode(_getPermissionErrorMessage(err));
+    });
+}
+
+function _showARUI() {
+  state.isFallbackMode = false;
+  dom.startOverlay.style.display = 'none';
+  dom.exitArButton.classList.remove('hidden');
+  dom.editControls.style.display = 'flex';
+  dom.addCharacterButton.classList.add('hidden');
+  collapsePanel();
+  updateInstructions();
+  updateControlStates();
+}
+
+function _getPermissionErrorMessage(err) {
+  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError' ||
+      err.name === 'OrientationDeniedError') {
+    return isIOS
+      ? 'カメラまたはモーションセンサーへのアクセスが拒否されました。\n' +
+        '設定 > Safari > カメラ でこのサイトを「許可」に設定し、ページを再読み込みしてください。'
+      : 'カメラへのアクセスが拒否されました。ブラウザの権限設定を確認してください。';
+  }
+  if (err.name === 'SecurityError' || !navigator.mediaDevices) {
+    return 'カメラへのアクセスにはHTTPS接続が必要です。\nngrok等のHTTPS URLでアクセスしてください。';
+  }
+  return `ARを起動できませんでした（${err.name || err.message || '不明なエラー'}）。3Dビューで表示します。`;
 }
 
 // ── Screen projection / tap detection ──
