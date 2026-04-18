@@ -17,8 +17,8 @@ export function clearExitTimeout() {
 }
 
 export function getActiveXrSession() {
-  // 8th Wall 使用時は WebXR セッションなし
-  if (window.XR8) return null;
+  // XR8 セッション中は WebXR セッションなし
+  if (dom.sceneEl.components && dom.sceneEl.components['xrweb']) return null;
   try { return dom.sceneEl.renderer.xr.getSession(); } catch (_) { return null; }
 }
 
@@ -86,8 +86,8 @@ export function finishExitToMainMenu() {
 }
 
 export function requestExitToMainMenu() {
-  if (window.XR8) {
-    // 8th Wall 使用時: WebXR セッションがないので UI リセットのみ
+  if (dom.sceneEl.components && dom.sceneEl.components['xrweb']) {
+    // XR8 セッション中: WebXR セッションがないので UI リセットのみ
     finishExitToMainMenu();
     return;
   }
@@ -110,38 +110,36 @@ export function requestExitToMainMenu() {
   }, 1000);
 }
 
-export function startARSession() {
-  if (window.XR8) {
-    const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    if (isMobile) {
-      _startXR8ARSession();
-      return;
-    }
-  }
+// WebXR immersive-ar サポートをページ読み込み時に先行チェックしてキャッシュする。
+// startARSession() がタップ（user gesture）から同期的に呼ばれるとき、
+// await を挟まず結果を使えるので iOS のジェスチャーコンテキストが維持される。
+let _webXRArSupported = false;
+if (navigator.xr) {
+  navigator.xr.isSessionSupported('immersive-ar')
+    .then(s => { _webXRArSupported = s; })
+    .catch(() => {});
+}
 
-  // 8th Wall が未ロードの場合: WebXR にフォールバック（デスクトップ等）
-  if (!navigator.xr) {
-    enterFallbackMode('お使いのブラウザはWebXRに対応していません。3Dビューで表示します。');
+export function startARSession() {
+  const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+  // ── Android Chrome (ARCore): WebXR immersive-ar 対応 ──
+  // _webXRArSupported はページロード時に同期的にセット済み
+  if (_webXRArSupported) {
+    _showARUI();
+    dom.sceneEl.enterAR();
     return;
   }
-  navigator.xr.isSessionSupported('immersive-ar').then(supported => {
-    if (!supported) {
-      enterFallbackMode('お使いのブラウザはARに対応していません。3Dビューで表示します。');
-      return;
-    }
-    state.isFallbackMode = false;
-    dom.startOverlay.style.display = 'none';
-    dom.exitArButton.classList.remove('hidden');
-    dom.editControls.style.display = 'flex';
-    dom.addCharacterButton.classList.add('hidden');
-    collapsePanel();
-    updateInstructions();
-    updateControlStates();
-    dom.sceneEl.enterAR();
-  }).catch(err => {
-    console.error(err);
-    enterFallbackMode('ARセッションの確認中にエラーが発生しました。3Dビューで表示します。');
-  });
+
+  // ── iOS Safari: navigator.xr 未定義 → XR8 (同期パスでジェスチャーコンテキスト維持) ──
+  // ── Android で WebXR なし (稀): XR8 フォールバック ──
+  if (window.XR8 && isMobile) {
+    _startXR8ARSession();
+    return;
+  }
+
+  // ── デスクトップ等: 3D フォールバック ──
+  enterFallbackMode('お使いのブラウザはARに対応していません。3Dビューで表示します。');
 }
 
 // iOS/Android 向け XR8 ARセッション開始。
