@@ -84,7 +84,15 @@ dom.imageUploadInput.addEventListener('change', e => {
 });
 
 // ── Start overlay ──
-dom.startOverlay.addEventListener('pointerup', startARSession);
+// touchend: iOS/Android 用。iOS Safari は pointerup を getUserMedia() の
+// trusted user gesture として認識しないため touchend を使う。
+// e.preventDefault() で後続の click イベントの二重発火を抑制する。
+dom.startOverlay.addEventListener('touchend', (e) => {
+  e.preventDefault();
+  startARSession();
+}, { passive: false });
+// click: デスクトップ用（タッチデバイスでは touchend の preventDefault により発火しない）
+dom.startOverlay.addEventListener('click', startARSession);
 
 // ── Scene events ──
 dom.sceneEl.addEventListener('ar-hit-test-achieved', () => {
