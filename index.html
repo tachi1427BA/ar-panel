@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>WebXR Character Panel</title>
+  <title>AR立ち絵 Viewer</title>
   <meta name="description" content="AR立ち絵Viewer">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <!-- 8th Wall engine binary (SLAM included) – App Key 不要 / iOS Safari 対応 -->
@@ -144,6 +144,10 @@
       font-size: 16px; color: rgba(255,255,255,0.75);
       animation: pulse 1.8s ease-in-out infinite;
     }
+    #start-overlay-permission {
+      font-size: 12px; color: rgba(255,255,255,0.45);
+      margin-top: 12px; line-height: 1.6; text-align: center;
+    }
     @keyframes pulse {
       0%, 100% { opacity: 0.5; }
       50%       { opacity: 1; }
@@ -157,6 +161,7 @@
     <div id="start-overlay">
       <div id="start-overlay-title">AR立ち絵 Viewer</div>
       <div id="start-overlay-hint">タップして開始</div>
+      <div id="start-overlay-permission">カメラとモーションセンサーへの<br>アクセスを求めます</div>
     </div>
 
     <!-- ── Top bar ── -->

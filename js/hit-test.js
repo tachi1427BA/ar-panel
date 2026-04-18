@@ -140,16 +140,12 @@ AFRAME.registerComponent('ar-continuous-hit-test', {
   },
 
   // XR8 ヒットテスト（iOS Safari / 8th Wall）
-  // ESTIMATED_SURFACE / PLANE を優先することで ARKit 内部スムージング済みの
-  // 平面推定値を利用し、生の FEATURE_POINT より安定したトラッキングを実現する。
   _tickXR8() {
     if (!window.XR8 || !window.XR8.XrController) return;
 
     let results;
     try {
-      // PLANE → ESTIMATED_SURFACE の優先順で平面を検出。
-      // 平面が未検出の場合は結果なし（FEATURE_POINT よりも安定）。
-      results = XR8.XrController.hitTest(0.5, 0.5, ['PLANE', 'ESTIMATED_SURFACE']);
+      results = XR8.XrController.hitTest(0.5, 0.5, ['FEATURE_POINT']);
     } catch (_) {
       return;
     }
