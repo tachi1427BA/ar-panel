@@ -5,6 +5,9 @@
   <title>WebXR Character Panel</title>
   <meta name="description" content="AR立ち絵Viewer">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- 8th Wall engine binary (SLAM included) – App Key 不要 / iOS Safari 対応 -->
+  <script src="https://cdn.jsdelivr.net/npm/@8thwall/engine-binary@1/dist/xr.js"
+          async crossorigin="anonymous" data-preload-chunks="slam"></script>
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <script src="js/hit-test.js"></script>
   <style>
@@ -223,7 +226,8 @@
 
   <a-scene
     id="scene"
-    webxr="optionalFeatures: hit-test, local-floor, dom-overlay; overlayElement: #main-ui;"
+    xrconfig
+    xrweb
     ar-continuous-hit-test="target: #reticle"
     xr-mode-ui="enabled: false"
     renderer="colorManagement: true; preserveDrawingBuffer: true; alpha: true;"

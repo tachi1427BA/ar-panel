@@ -17,6 +17,8 @@ export function clearExitTimeout() {
 }
 
 export function getActiveXrSession() {
+  // 8th Wall 使用時は WebXR セッションなし
+  if (window.XR8) return null;
   try { return dom.sceneEl.renderer.xr.getSession(); } catch (_) { return null; }
 }
 
@@ -84,6 +86,12 @@ export function finishExitToMainMenu() {
 }
 
 export function requestExitToMainMenu() {
+  if (window.XR8) {
+    // 8th Wall 使用時: WebXR セッションがないので UI リセットのみ
+    finishExitToMainMenu();
+    return;
+  }
+
   const xrSession = getActiveXrSession();
   if (!xrSession) { finishExitToMainMenu(); return; }
   if (state.isExitingSession) return;
@@ -103,6 +111,20 @@ export function requestExitToMainMenu() {
 }
 
 export function startARSession() {
+  if (window.XR8) {
+    // 8th Wall が利用可能（iOS Safari / Android Chrome どちらも対応）
+    state.isFallbackMode = false;
+    dom.startOverlay.style.display = 'none';
+    dom.exitArButton.classList.remove('hidden');
+    dom.editControls.style.display = 'flex';
+    dom.addCharacterButton.classList.add('hidden');
+    collapsePanel();
+    updateInstructions();
+    updateControlStates();
+    return;
+  }
+
+  // 8th Wall が未ロードの場合: WebXR にフォールバック（デスクトップ等）
   if (!navigator.xr) {
     enterFallbackMode('お使いのブラウザはWebXRに対応していません。3Dビューで表示します。');
     return;
