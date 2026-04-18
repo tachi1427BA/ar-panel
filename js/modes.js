@@ -112,16 +112,23 @@ export function requestExitToMainMenu() {
 
 export function startARSession() {
   if (window.XR8) {
-    // 8th Wall が利用可能（iOS Safari / Android Chrome どちらも対応）
-    state.isFallbackMode = false;
-    dom.startOverlay.style.display = 'none';
-    dom.exitArButton.classList.remove('hidden');
-    dom.editControls.style.display = 'flex';
-    dom.addCharacterButton.classList.add('hidden');
-    collapsePanel();
-    updateInstructions();
-    updateControlStates();
-    return;
+    const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (isMobile) {
+      // user gesture 内で xrweb を追加 → xrweb.init() が同期で XR8.run() を呼ぶ
+      // iOS Safari はこの gesture コンテキストでカメラ権限を許可する
+      if (!dom.sceneEl.components['xrweb']) {
+        dom.sceneEl.setAttribute('xrweb', 'allowedDevices: any');
+      }
+      state.isFallbackMode = false;
+      dom.startOverlay.style.display = 'none';
+      dom.exitArButton.classList.remove('hidden');
+      dom.editControls.style.display = 'flex';
+      dom.addCharacterButton.classList.add('hidden');
+      collapsePanel();
+      updateInstructions();
+      updateControlStates();
+      return;
+    }
   }
 
   // 8th Wall が未ロードの場合: WebXR にフォールバック（デスクトップ等）

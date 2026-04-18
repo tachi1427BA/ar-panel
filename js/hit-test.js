@@ -31,7 +31,7 @@ AFRAME.registerComponent('ar-continuous-hit-test', {
 
     let results;
     try {
-      results = XR8.XrController.hitTest(0.5, 0.5, ['FEATURE_POINT', 'PLANE']);
+      results = XR8.XrController.hitTest(0.5, 0.5, ['FEATURE_POINT']);
     } catch (_) {
       return;
     }
