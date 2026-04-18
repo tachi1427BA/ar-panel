@@ -20,10 +20,6 @@ AFRAME.registerComponent('ar-continuous-hit-test', {
     this.hitTestSource = null; // WebXR モード用
     this.hasHit        = false;
 
-    // XR8 モード用: 指数移動平均スムージング用の状態
-    this._xr8SmoothedPos = null; // THREE.Vector3
-    this._xr8SmoothedRot = null; // THREE.Quaternion
-
     this._onEnterVR       = this._onEnterVR.bind(this);
     this._onExitVR        = this._onExitVR.bind(this);
     this._onSelectWebXR   = this._onSelectWebXR.bind(this);
@@ -73,8 +69,6 @@ AFRAME.registerComponent('ar-continuous-hit-test', {
       this.hitTestSource = null;
     }
     this.hasHit = false;
-    this._xr8SmoothedPos = null;
-    this._xr8SmoothedRot = null;
   },
 
   // ── タップ検出 ──
@@ -148,7 +142,6 @@ AFRAME.registerComponent('ar-continuous-hit-test', {
   // XR8 ヒットテスト（iOS Safari / 8th Wall）
   // ESTIMATED_SURFACE / PLANE を優先することで ARKit 内部スムージング済みの
   // 平面推定値を利用し、生の FEATURE_POINT より安定したトラッキングを実現する。
-  // さらに指数移動平均（EMA）で残留ジッターを吸収する。
   _tickXR8() {
     if (!window.XR8 || !window.XR8.XrController) return;
 
@@ -167,30 +160,12 @@ AFRAME.registerComponent('ar-continuous-hit-test', {
       const hit = results[0];
       if (target) {
         /* global THREE */
-        const rawPos = hit.position; // { x, y, z }
-
-        // 指数移動平均でポジションをスムージング（lerp係数 0.25 ≈ 80ms lag at 60fps）
-        if (!this._xr8SmoothedPos) {
-          this._xr8SmoothedPos = new THREE.Vector3(rawPos.x, rawPos.y, rawPos.z);
-        } else {
-          this._xr8SmoothedPos.lerp(
-            new THREE.Vector3(rawPos.x, rawPos.y, rawPos.z), 0.25
-          );
-        }
-
-        // setAttribute より直接操作の方が A-Frame パース処理を省けて高速
-        target.object3D.position.copy(this._xr8SmoothedPos);
+        target.object3D.position.set(hit.position.x, hit.position.y, hit.position.z);
 
         if (hit.rotation) {
-          const rawQ = new THREE.Quaternion(
+          target.object3D.quaternion.set(
             hit.rotation.x, hit.rotation.y, hit.rotation.z, hit.rotation.w
           );
-          if (!this._xr8SmoothedRot) {
-            this._xr8SmoothedRot = rawQ.clone();
-          } else {
-            this._xr8SmoothedRot.slerp(rawQ, 0.25);
-          }
-          target.object3D.quaternion.copy(this._xr8SmoothedRot);
         }
       }
       if (!this.hasHit) {
