@@ -145,7 +145,10 @@ AFRAME.registerComponent('ar-continuous-hit-test', {
 
     let results;
     try {
-      results = XR8.XrController.hitTest(0.5, 0.5, ['FEATURE_POINT']);
+      // ESTIMATED_SURFACE → FEATURE_POINT の優先順で検出。
+      // enableWorldPoints: true により面推定が有効なら ESTIMATED_SURFACE が返る。
+      // 面未検出時は FEATURE_POINT にフォールバックし常に動作を保証する。
+      results = XR8.XrController.hitTest(0.5, 0.5, ['ESTIMATED_SURFACE', 'FEATURE_POINT']);
     } catch (_) {
       return;
     }
